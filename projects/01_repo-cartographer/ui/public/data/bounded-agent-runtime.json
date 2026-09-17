@@ -1,0 +1,431 @@
+{
+  "name": "bounded-agent-runtime",
+  "root": "D:\\github\\bounded-agent-runtime",
+  "modules": 23,
+  "symbols": 117,
+  "loc": 1438,
+  "total_calls": 451,
+  "in_scope_calls": 157,
+  "resolved_calls": 151,
+  "resolution_rate": 0.3348,
+  "repo_resolution_rate": 0.9618,
+  "excluded_projects": [],
+  "parse_errors": [],
+  "core_modules": [
+    {
+      "module": "bar.tools.registry",
+      "path": "src/bar/tools/registry.py",
+      "loc": 92,
+      "symbols": 9,
+      "importance": 0.11897,
+      "imports": [],
+      "imported_by": [
+        "bar.runtime.loop",
+        "bar.runtime.planner",
+        "bar.tools",
+        "tests.test_containment",
+        "tests.test_metrics",
+        "tests.toolset"
+      ]
+    },
+    {
+      "module": "bar.observe.audit",
+      "path": "src/bar/observe/audit.py",
+      "loc": 78,
+      "symbols": 6,
+      "importance": 0.10553,
+      "imports": [],
+      "imported_by": [
+        "bar.api.main",
+        "bar.cli",
+        "bar.observe",
+        "bar.observe.metrics",
+        "bar.runtime.loop",
+        "tests.test_containment"
+      ]
+    },
+    {
+      "module": "bar.runtime.loop",
+      "path": "src/bar/runtime/loop.py",
+      "loc": 187,
+      "symbols": 10,
+      "importance": 0.09626,
+      "imports": [
+        "bar.budget",
+        "bar.observe.audit",
+        "bar.tools.registry"
+      ],
+      "imported_by": [
+        "bar.runtime",
+        "bar.runtime.planner",
+        "demo",
+        "tests.planners",
+        "tests.test_containment"
+      ]
+    },
+    {
+      "module": "bar.budget.limits",
+      "path": "src/bar/budget/limits.py",
+      "loc": 83,
+      "symbols": 9,
+      "importance": 0.08199,
+      "imports": [],
+      "imported_by": [
+        "bar.budget"
+      ]
+    },
+    {
+      "module": "bar.budget",
+      "path": "src/bar/budget/__init__.py",
+      "loc": 4,
+      "symbols": 0,
+      "importance": 0.06839,
+      "imports": [
+        "bar.budget.limits"
+      ],
+      "imported_by": [
+        "bar.api.main",
+        "bar.cli",
+        "bar.runtime.loop",
+        "demo",
+        "tests.test_containment",
+        "tests.test_metrics"
+      ]
+    },
+    {
+      "module": "bar.config",
+      "path": "src/bar/config.py",
+      "loc": 33,
+      "symbols": 2,
+      "importance": 0.06176,
+      "imports": [],
+      "imported_by": [
+        "bar.api.main",
+        "bar.cli",
+        "bar.llm",
+        "bar.runtime.planner"
+      ]
+    },
+    {
+      "module": "tests.toolset",
+      "path": "tests/toolset.py",
+      "loc": 82,
+      "symbols": 3,
+      "importance": 0.04112,
+      "imports": [
+        "bar.tools.registry"
+      ],
+      "imported_by": [
+        "bar.api.main",
+        "bar.cli",
+        "demo",
+        "tests.test_containment",
+        "tests.test_metrics"
+      ]
+    },
+    {
+      "module": "tests.planners",
+      "path": "tests/planners.py",
+      "loc": 75,
+      "symbols": 18,
+      "importance": 0.03521,
+      "imports": [
+        "bar.runtime.loop"
+      ],
+      "imported_by": [
+        "demo",
+        "tests.test_containment",
+        "tests.test_metrics"
+      ]
+    },
+    {
+      "module": "bar.runtime",
+      "path": "src/bar/runtime/__init__.py",
+      "loc": 4,
+      "symbols": 0,
+      "importance": 0.03315,
+      "imports": [
+        "bar.runtime.loop"
+      ],
+      "imported_by": [
+        "bar.api.main",
+        "bar.cli",
+        "tests.test_metrics"
+      ]
+    },
+    {
+      "module": "bar.llm",
+      "path": "src/bar/llm.py",
+      "loc": 125,
+      "symbols": 12,
+      "importance": 0.03019,
+      "imports": [
+        "bar.config"
+      ],
+      "imported_by": [
+        "bar.runtime.planner"
+      ]
+    },
+    {
+      "module": "bar.observe.metrics",
+      "path": "src/bar/observe/metrics.py",
+      "loc": 81,
+      "symbols": 2,
+      "importance": 0.02977,
+      "imports": [
+        "bar.observe.audit"
+      ],
+      "imported_by": [
+        "bar.api.main",
+        "tests.test_metrics"
+      ]
+    },
+    {
+      "module": "bar.runtime.planner",
+      "path": "src/bar/runtime/planner.py",
+      "loc": 78,
+      "symbols": 3,
+      "importance": 0.02977,
+      "imports": [
+        "bar.config",
+        "bar.llm",
+        "bar.runtime.loop",
+        "bar.tools.registry"
+      ],
+      "imported_by": [
+        "bar.api.main",
+        "bar.cli"
+      ]
+    }
+  ],
+  "entry_points": [
+    {
+      "qualname": "bar.runtime.loop.Runtime.run",
+      "name": "run",
+      "kind": "method",
+      "path": "src/bar/runtime/loop.py",
+      "line": 87,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.runtime.planner.LLMPlanner.next_action",
+      "name": "next_action",
+      "kind": "method",
+      "path": "src/bar/runtime/planner.py",
+      "line": 35,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.cli.demo",
+      "name": "demo",
+      "kind": "function",
+      "path": "src/bar/cli.py",
+      "line": 16,
+      "fan_in": 0,
+      "docstring": "Run a real LLM planner inside the runtime, against the demo toolset."
+    },
+    {
+      "qualname": "bar.api.main.start_run",
+      "name": "start_run",
+      "kind": "function",
+      "path": "src/bar/api/main.py",
+      "line": 47,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.llm.HuggingFaceBackend.complete",
+      "name": "complete",
+      "kind": "method",
+      "path": "src/bar/llm.py",
+      "line": 92,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.observe.quotas.QuotaManager.check_and_start",
+      "name": "check_and_start",
+      "kind": "method",
+      "path": "src/bar/observe/quotas.py",
+      "line": 37,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.tools.registry.ToolRegistry.call",
+      "name": "call",
+      "kind": "method",
+      "path": "src/bar/tools/registry.py",
+      "line": 76,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.observe.audit.AuditLog.record",
+      "name": "record",
+      "kind": "method",
+      "path": "src/bar/observe/audit.py",
+      "line": 43,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_containment.test_a_failing_tool_does_not_crash_the_run",
+      "name": "test_a_failing_tool_does_not_crash_the_run",
+      "kind": "function",
+      "path": "tests/test_containment.py",
+      "line": 86,
+      "fan_in": 0,
+      "docstring": "A dependency being down is an observation, not an exception that escapes."
+    },
+    {
+      "qualname": "bar.budget.limits.Budget.record_step",
+      "name": "record_step",
+      "kind": "method",
+      "path": "src/bar/budget/limits.py",
+      "line": 56,
+      "fan_in": 0,
+      "docstring": "Count a step and detect repetition."
+    },
+    {
+      "qualname": "bar.cli.replay",
+      "name": "replay",
+      "kind": "function",
+      "path": "src/bar/cli.py",
+      "line": 53,
+      "fan_in": 0,
+      "docstring": "Reconstruct a run from its audit log, without rerunning the model."
+    },
+    {
+      "qualname": "bar.llm.OllamaBackend.complete",
+      "name": "complete",
+      "kind": "method",
+      "path": "src/bar/llm.py",
+      "line": 32,
+      "fan_in": 0,
+      "docstring": null
+    }
+  ],
+  "most_called": [
+    {
+      "qualname": "bar.budget.limits.Budget",
+      "name": "Budget",
+      "kind": "class",
+      "path": "src/bar/budget/limits.py",
+      "line": 25,
+      "fan_in": 17,
+      "docstring": "A ceiling on one run. Every field is a hard stop, not a warning."
+    },
+    {
+      "qualname": "bar.runtime.loop.Action",
+      "name": "Action",
+      "kind": "class",
+      "path": "src/bar/runtime/loop.py",
+      "line": 40,
+      "fan_in": 16,
+      "docstring": "One decision. `finish` ends the run; anything else is a tool call."
+    },
+    {
+      "qualname": "tests.test_containment.runtime",
+      "name": "runtime",
+      "kind": "function",
+      "path": "tests/test_containment.py",
+      "line": 32,
+      "fan_in": 12,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.runtime.loop.Runtime",
+      "name": "Runtime",
+      "kind": "class",
+      "path": "src/bar/runtime/loop.py",
+      "line": 69,
+      "fan_in": 7,
+      "docstring": "Runs a planner against a toolset, inside a budget it cannot influence."
+    },
+    {
+      "qualname": "tests.planners.Wellbehaved",
+      "name": "Wellbehaved",
+      "kind": "class",
+      "path": "tests/planners.py",
+      "line": 55,
+      "fan_in": 7,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.toolset.build_registry",
+      "name": "build_registry",
+      "kind": "function",
+      "path": "tests/toolset.py",
+      "line": 17,
+      "fan_in": 7,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.config.get_settings",
+      "name": "get_settings",
+      "kind": "function",
+      "path": "src/bar/config.py",
+      "line": 31,
+      "fan_in": 6,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.tools.registry.Tool",
+      "name": "Tool",
+      "kind": "class",
+      "path": "src/bar/tools/registry.py",
+      "line": 44,
+      "fan_in": 6,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_metrics._fleet.rt",
+      "name": "rt",
+      "kind": "function",
+      "path": "tests/test_metrics.py",
+      "line": 16,
+      "fan_in": 6,
+      "docstring": null
+    },
+    {
+      "qualname": "bar.budget.limits.BudgetExceeded",
+      "name": "BudgetExceeded",
+      "kind": "class",
+      "path": "src/bar/budget/limits.py",
+      "line": 16,
+      "fan_in": 5,
+      "docstring": "Raised the moment a ceiling is crossed. Carries which one, for the audit log."
+    },
+    {
+      "qualname": "bar.runtime.loop.Runtime._finish",
+      "name": "_finish",
+      "kind": "method",
+      "path": "src/bar/runtime/loop.py",
+      "line": 168,
+      "fan_in": 5,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_metrics._fleet",
+      "name": "_fleet",
+      "kind": "function",
+      "path": "tests/test_metrics.py",
+      "line": 15,
+      "fan_in": 5,
+      "docstring": null
+    }
+  ],
+  "unresolved_sample": [
+    [
+      "AuditLog.load",
+      5
+    ],
+    [
+      "app",
+      1
+    ]
+  ]
+}

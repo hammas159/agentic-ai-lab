@@ -1,0 +1,156 @@
+/* One stylesheet, no framework. The site is five pages of tables and bars;
+   a CSS framework would be larger than the thing it styles. */
+
+:root {
+  --bg: #fbfbfa;
+  --panel: #ffffff;
+  --ink: #1a1c1e;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #2563eb;
+  --good: #15803d;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1013;
+    --panel: #16191d;
+    --ink: #e6e8ea;
+    --muted: #9099a3;
+    --line: #262b31;
+    --accent: #60a5fa;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e1013;
+  --panel: #16191d;
+  --ink: #e6e8ea;
+  --muted: #9099a3;
+  --line: #262b31;
+  --accent: #60a5fa;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-block: 2.5rem 4rem;
+  padding-inline: 20px;
+}
+
+header.site {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+header.site .wrap { padding-block: 1.25rem; }
+header.site h1 { margin: 0; font-size: 1.15rem; letter-spacing: -0.01em; }
+header.site p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.875rem; }
+header.site a { color: inherit; text-decoration: none; }
+
+h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 2.5rem 0 0.85rem;
+  font-weight: 600;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+.stat .v { font-size: 1.5rem; font-weight: 650; letter-spacing: -0.02em; }
+.stat .k { color: var(--muted); font-size: 0.78rem; margin-top: 0.15rem; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.875rem;
+}
+th, td {
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+tr:last-child td { border-bottom: none; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+code, .mono { font-family: var(--mono); font-size: 0.85em; }
+.path { color: var(--muted); font-family: var(--mono); font-size: 0.78rem; }
+
+a { color: var(--accent); }
+
+.bar {
+  position: relative;
+  height: 5px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 70px;
+}
+.bar > span { display: block; height: 100%; background: var(--accent); }
+
+.rate { font-variant-numeric: tabular-nums; font-weight: 600; }
+.rate.good { color: var(--good); }
+.rate.warn { color: var(--warn); }
+.rate.bad  { color: var(--bad); }
+
+.note {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-top: 1rem;
+}
+
+.tablewrap { overflow-x: auto; }
+
+@media (max-width: 560px) {
+  .stat .v { font-size: 1.25rem; }
+  th, td { padding: 0.5rem 0.6rem; }
+}

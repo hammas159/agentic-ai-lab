@@ -1,0 +1,48 @@
+[project]
+name = "test-smith"
+version = "0.1.0"
+description = "Mutation testing from the standard library: does the suite catch a change, or merely run the line?"
+readme = "README.md"
+authors = [
+    { name = "Muhammad Hammas", email = "214618908+hammas159@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+
+# The mutation engine, the runner and the line tracer are all standard library.
+# mutmut and coverage.py were the obvious dependencies and neither is needed:
+# `ast` mutates, `subprocess` runs the suite, `sys.settrace` records the lines.
+dependencies = []
+
+[project.optional-dependencies]
+# The UI is the one optional dependency. The measurement never needs it.
+ui = ["nicegui>=2.0"]
+
+[project.scripts]
+testsmith = "testsmith.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "testsmith"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "slow: spawns a real pytest subprocess against a temporary repository",
+]
+
+[tool.ruff]
+line-length = 96
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]

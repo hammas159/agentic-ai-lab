@@ -1,0 +1,34 @@
+[project]
+name = "study-tutor"
+version = "0.1.0"
+description = "Spaced repetition where the scheduler is arithmetic and the model only writes questions."
+readme = "README.md"
+authors = [{ name = "Muhammad Hammas", email = "214618908+hammas159@users.noreply.github.com" }]
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+ui = ["reflex>=0.6"]
+
+[project.scripts]
+study-tutor = "tutor.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "tutor"
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 96
+target-version = "py311"
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]

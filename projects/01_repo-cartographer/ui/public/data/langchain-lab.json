@@ -1,0 +1,478 @@
+{
+  "name": "langchain-lab",
+  "root": "D:\\github\\langchain-lab",
+  "modules": 35,
+  "symbols": 339,
+  "loc": 5867,
+  "total_calls": 1298,
+  "in_scope_calls": 499,
+  "resolved_calls": 487,
+  "resolution_rate": 0.3752,
+  "repo_resolution_rate": 0.976,
+  "excluded_projects": [],
+  "parse_errors": [],
+  "core_modules": [
+    {
+      "module": "shared.models",
+      "path": "shared/models.py",
+      "loc": 121,
+      "symbols": 4,
+      "importance": 0.13927,
+      "imports": [],
+      "imported_by": [
+        "projects.p01_structured_output.benchmark",
+        "projects.p02_retrieval_absences.benchmark",
+        "projects.p03_memory_recall.benchmark",
+        "projects.p04_injection_defence.benchmark",
+        "projects.p05_judge_bias.benchmark",
+        "shared.llm",
+        "tests.test_p01_structured_output",
+        "tests.test_p02_retrieval_absences",
+        "tests.test_p03_memory_recall",
+        "tests.test_p04_injection_defence",
+        "tests.test_p05_judge_bias"
+      ]
+    },
+    {
+      "module": "shared.llm",
+      "path": "shared/llm.py",
+      "loc": 199,
+      "symbols": 16,
+      "importance": 0.11402,
+      "imports": [
+        "shared.models"
+      ],
+      "imported_by": [
+        "projects.p01_structured_output.benchmark",
+        "projects.p01_structured_output.strategies",
+        "projects.p02_retrieval_absences.benchmark",
+        "projects.p02_retrieval_absences.pipeline",
+        "projects.p02_retrieval_absences.retrieval",
+        "projects.p03_memory_recall.benchmark",
+        "projects.p03_memory_recall.memories",
+        "projects.p03_memory_recall.probe",
+        "projects.p04_injection_defence.benchmark",
+        "projects.p04_injection_defence.chain",
+        "projects.p05_judge_bias.benchmark",
+        "projects.p05_judge_bias.judge",
+        "tests.test_p01_structured_output",
+        "tests.test_p02_retrieval_absences",
+        "tests.test_p03_memory_recall",
+        "tests.test_p04_injection_defence",
+        "tests.test_p05_judge_bias"
+      ]
+    },
+    {
+      "module": "projects.p01_structured_output.corpus",
+      "path": "projects/p01_structured_output/corpus.py",
+      "loc": 334,
+      "symbols": 2,
+      "importance": 0.07344,
+      "imports": [],
+      "imported_by": [
+        "projects.p01_structured_output.benchmark",
+        "projects.p01_structured_output.scoring",
+        "projects.p02_retrieval_absences.papers",
+        "projects.p02_retrieval_absences.pipeline",
+        "tests.test_p01_structured_output",
+        "tests.test_p02_retrieval_absences"
+      ]
+    },
+    {
+      "module": "projects.p04_injection_defence.payloads",
+      "path": "projects/p04_injection_defence/payloads.py",
+      "loc": 165,
+      "symbols": 2,
+      "importance": 0.04336,
+      "imports": [],
+      "imported_by": [
+        "projects.p04_injection_defence.benchmark",
+        "projects.p04_injection_defence.chain",
+        "projects.p04_injection_defence.scoring",
+        "tests.test_p04_injection_defence"
+      ]
+    },
+    {
+      "module": "projects.p03_memory_recall.conversation",
+      "path": "projects/p03_memory_recall/conversation.py",
+      "loc": 256,
+      "symbols": 7,
+      "importance": 0.03905,
+      "imports": [],
+      "imported_by": [
+        "projects.p03_memory_recall.benchmark",
+        "projects.p03_memory_recall.memories",
+        "projects.p03_memory_recall.probe",
+        "tests.test_p03_memory_recall"
+      ]
+    },
+    {
+      "module": "projects.p05_judge_bias.answers",
+      "path": "projects/p05_judge_bias/answers.py",
+      "loc": 293,
+      "symbols": 6,
+      "importance": 0.03221,
+      "imports": [],
+      "imported_by": [
+        "projects.p05_judge_bias.benchmark",
+        "projects.p05_judge_bias.judge",
+        "tests.test_p05_judge_bias"
+      ]
+    },
+    {
+      "module": "projects.p02_retrieval_absences.papers",
+      "path": "projects/p02_retrieval_absences/papers.py",
+      "loc": 363,
+      "symbols": 9,
+      "importance": 0.03193,
+      "imports": [
+        "projects.p01_structured_output.corpus"
+      ],
+      "imported_by": [
+        "projects.p02_retrieval_absences.benchmark",
+        "projects.p02_retrieval_absences.pipeline",
+        "projects.p02_retrieval_absences.retrieval",
+        "tests.test_p02_retrieval_absences"
+      ]
+    },
+    {
+      "module": "projects.p04_injection_defence.chain",
+      "path": "projects/p04_injection_defence/chain.py",
+      "loc": 170,
+      "symbols": 5,
+      "importance": 0.03043,
+      "imports": [
+        "projects.p04_injection_defence.payloads",
+        "shared.llm"
+      ],
+      "imported_by": [
+        "projects.p04_injection_defence.benchmark",
+        "projects.p04_injection_defence.scoring",
+        "tests.test_p04_injection_defence"
+      ]
+    },
+    {
+      "module": "projects.p03_memory_recall.memories",
+      "path": "projects/p03_memory_recall/memories.py",
+      "loc": 193,
+      "symbols": 12,
+      "importance": 0.0274,
+      "imports": [
+        "projects.p03_memory_recall.conversation",
+        "shared.llm"
+      ],
+      "imported_by": [
+        "projects.p03_memory_recall.benchmark",
+        "projects.p03_memory_recall.probe",
+        "tests.test_p03_memory_recall"
+      ]
+    },
+    {
+      "module": "projects.p01_structured_output.scoring",
+      "path": "projects/p01_structured_output/scoring.py",
+      "loc": 264,
+      "symbols": 20,
+      "importance": 0.02502,
+      "imports": [
+        "projects.p01_structured_output.corpus"
+      ],
+      "imported_by": [
+        "projects.p01_structured_output.benchmark",
+        "projects.p02_retrieval_absences.pipeline",
+        "tests.test_p01_structured_output",
+        "tests.test_p02_retrieval_absences"
+      ]
+    },
+    {
+      "module": "projects.p01_structured_output.schemas",
+      "path": "projects/p01_structured_output/schemas.py",
+      "loc": 158,
+      "symbols": 10,
+      "importance": 0.02485,
+      "imports": [],
+      "imported_by": [
+        "projects.p01_structured_output.benchmark",
+        "projects.p02_retrieval_absences.benchmark",
+        "tests.test_p01_structured_output",
+        "tests.test_p02_retrieval_absences"
+      ]
+    },
+    {
+      "module": "projects.p01_structured_output.strategies",
+      "path": "projects/p01_structured_output/strategies.py",
+      "loc": 324,
+      "symbols": 14,
+      "importance": 0.02333,
+      "imports": [
+        "shared.llm"
+      ],
+      "imported_by": [
+        "projects.p01_structured_output.benchmark",
+        "projects.p02_retrieval_absences.pipeline",
+        "tests.test_p01_structured_output"
+      ]
+    }
+  ],
+  "entry_points": [
+    {
+      "qualname": "projects.p01_structured_output.strategies.error_feedback",
+      "name": "error_feedback",
+      "kind": "function",
+      "path": "projects/p01_structured_output/strategies.py",
+      "line": 258,
+      "fan_in": 0,
+      "docstring": "Repair, then hand the model its own validation errors and ask again."
+    },
+    {
+      "qualname": "shared.llm.Ledger.on_llm_end",
+      "name": "on_llm_end",
+      "kind": "method",
+      "path": "shared/llm.py",
+      "line": 68,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_p02_retrieval_absences.test_per_field_retrieval_beats_a_single_schema_query",
+      "name": "test_per_field_retrieval_beats_a_single_schema_query",
+      "kind": "function",
+      "path": "tests/test_p02_retrieval_absences.py",
+      "line": 209,
+      "fan_in": 0,
+      "docstring": "The project's central retrieval claim, asserted rather than only reported."
+    },
+    {
+      "qualname": "projects.p01_structured_output.strategies.repaired",
+      "name": "repaired",
+      "kind": "function",
+      "path": "projects/p01_structured_output/strategies.py",
+      "line": 237,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p01_structured_output.scoring.Aggregate.add",
+      "name": "add",
+      "kind": "method",
+      "path": "projects/p01_structured_output/scoring.py",
+      "line": 229,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p01_structured_output.strategies.prompt_only",
+      "name": "prompt_only",
+      "kind": "function",
+      "path": "projects/p01_structured_output/strategies.py",
+      "line": 217,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_p01_structured_output.test_l5_union_discriminates_on_design",
+      "name": "test_l5_union_discriminates_on_design",
+      "kind": "function",
+      "path": "tests/test_p01_structured_output.py",
+      "line": 123,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p03_memory_recall.memories.summary_naive",
+      "name": "summary_naive",
+      "kind": "function",
+      "path": "projects/p03_memory_recall/memories.py",
+      "line": 130,
+      "fan_in": 0,
+      "docstring": "\"Summarise the conversation so far.\" The default instruction, and the control prompt."
+    },
+    {
+      "qualname": "tests.test_p01_structured_output.test_constrained_decoding_always_validates",
+      "name": "test_constrained_decoding_always_validates",
+      "kind": "function",
+      "path": "tests/test_p01_structured_output.py",
+      "line": 329,
+      "fan_in": 0,
+      "docstring": "The one guarantee `constrained` actually makes. If this fails, ollama changed."
+    },
+    {
+      "qualname": "tests.test_p01_structured_output.test_perfect_extraction_scores_one",
+      "name": "test_perfect_extraction_scores_one",
+      "kind": "function",
+      "path": "tests/test_p01_structured_output.py",
+      "line": 243,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_p03_memory_recall.test_summary_costs_calls_and_window_does_not",
+      "name": "test_summary_costs_calls_and_window_does_not",
+      "kind": "function",
+      "path": "tests/test_p03_memory_recall.py",
+      "line": 198,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_p04_injection_defence.test_an_undefended_loud_override_changes_the_answer",
+      "name": "test_an_undefended_loud_override_changes_the_answer",
+      "kind": "function",
+      "path": "tests/test_p04_injection_defence.py",
+      "line": 237,
+      "fan_in": 0,
+      "docstring": null
+    }
+  ],
+  "most_called": [
+    {
+      "qualname": "projects.p03_memory_recall.conversation.Turn",
+      "name": "Turn",
+      "kind": "class",
+      "path": "projects/p03_memory_recall/conversation.py",
+      "line": 47,
+      "fan_in": 26,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p05_judge_bias.answers.Answer",
+      "name": "Answer",
+      "kind": "class",
+      "path": "projects/p05_judge_bias/answers.py",
+      "line": 26,
+      "fan_in": 24,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p03_memory_recall.conversation.Fact",
+      "name": "Fact",
+      "kind": "class",
+      "path": "projects/p03_memory_recall/conversation.py",
+      "line": 31,
+      "fan_in": 18,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p01_structured_output.scoring.values_match",
+      "name": "values_match",
+      "kind": "function",
+      "path": "projects/p01_structured_output/scoring.py",
+      "line": 53,
+      "fan_in": 14,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p02_retrieval_absences.papers.Passage",
+      "name": "Passage",
+      "kind": "class",
+      "path": "projects/p02_retrieval_absences/papers.py",
+      "line": 28,
+      "fan_in": 13,
+      "docstring": "One retrievable unit, and the fields whose evidence it carries."
+    },
+    {
+      "qualname": "projects.p01_structured_output.corpus.Abstract",
+      "name": "Abstract",
+      "kind": "class",
+      "path": "projects/p01_structured_output/corpus.py",
+      "line": 29,
+      "fan_in": 12,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p04_injection_defence.payloads.Payload",
+      "name": "Payload",
+      "kind": "class",
+      "path": "projects/p04_injection_defence/payloads.py",
+      "line": 26,
+      "fan_in": 12,
+      "docstring": null
+    },
+    {
+      "qualname": "shared.llm.Ledger",
+      "name": "Ledger",
+      "kind": "class",
+      "path": "shared/llm.py",
+      "line": 45,
+      "fan_in": 12,
+      "docstring": "Records every model call made while it is attached."
+    },
+    {
+      "qualname": "projects.p01_structured_output.benchmark._pct",
+      "name": "_pct",
+      "kind": "function",
+      "path": "projects/p01_structured_output/benchmark.py",
+      "line": 81,
+      "fan_in": 10,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.p02_retrieval_absences.pipeline.classify",
+      "name": "classify",
+      "kind": "function",
+      "path": "projects/p02_retrieval_absences/pipeline.py",
+      "line": 88,
+      "fan_in": 10,
+      "docstring": "Decide what a single field's outcome actually was."
+    },
+    {
+      "qualname": "projects.p04_injection_defence.chain.inject",
+      "name": "inject",
+      "kind": "function",
+      "path": "projects/p04_injection_defence/chain.py",
+      "line": 89,
+      "fan_in": 10,
+      "docstring": "Place the payload inside the document, mid-way."
+    },
+    {
+      "qualname": "shared.llm.installed_tags",
+      "name": "installed_tags",
+      "kind": "function",
+      "path": "shared/llm.py",
+      "line": 174,
+      "fan_in": 10,
+      "docstring": "Model tags present locally, each in both its bare and `:latest` spelling."
+    }
+  ],
+  "unresolved_sample": [
+    [
+      "L1Flat.model_validate",
+      2
+    ],
+    [
+      "fn",
+      1
+    ],
+    [
+      "STRATEGIES.items",
+      1
+    ],
+    [
+      "build",
+      1
+    ],
+    [
+      "BY_TAG.get",
+      1
+    ],
+    [
+      "LADDER.values",
+      1
+    ],
+    [
+      "LADDER.items",
+      1
+    ],
+    [
+      "NULLABLE_FIELDS.items",
+      1
+    ],
+    [
+      "L5Union.model_validate",
+      1
+    ],
+    [
+      "DOCUMENT.split",
+      1
+    ]
+  ]
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>compliance-auditor</title>
+<style>
+:root{--bg:#fbfbfa;--panel:#fff;--ink:#1a1c1e;--muted:#6b7280;--line:#e5e7eb;
+      --pass:#15803d;--fail:#b91c1c;--unknown:#6b7280;--accent:#2563eb;
+      --mono:ui-monospace,Consolas,Menlo,monospace}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0e1013;--panel:#16191d;--ink:#e6e8ea;--muted:#9099a3;--line:#262b31;
+  --pass:#4ade80;--fail:#f87171;--accent:#60a5fa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 ui-sans-serif,system-ui,'Segoe UI',sans-serif}
+.wrap{max-width:1020px;margin:0 auto;padding-block:2rem 4rem;padding-inline:20px}
+h1{font-size:1.2rem;margin:0 0 .3rem}
+.sub{color:var(--muted);font-size:.88rem;margin:0 0 1.5rem;max-width:64ch}
+</style>
+<script type="module" src="https://cdn.jsdelivr.net/npm/lit@3.2.1/+esm"></script>
+<script type="module" src="./audit-view.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>compliance-auditor</h1>
+    <p class="sub">Stated policy checked against collected evidence. A control passes only
+      when a collector observed something; where nothing could be observed the result is
+      inconclusive and is excluded from the rate rather than counted as a pass.</p>
+    <audit-view></audit-view>
+  </div>
+</body>
+</html>

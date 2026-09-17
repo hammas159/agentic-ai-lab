@@ -1,0 +1,335 @@
+{
+  "name": "urdu-nlp-toolkit",
+  "root": "D:\\github\\urdu-nlp-toolkit",
+  "modules": 7,
+  "symbols": 59,
+  "loc": 1205,
+  "total_calls": 188,
+  "in_scope_calls": 63,
+  "resolved_calls": 63,
+  "resolution_rate": 0.3351,
+  "repo_resolution_rate": 1.0,
+  "excluded_projects": [],
+  "parse_errors": [],
+  "core_modules": [
+    {
+      "module": "urdunlp.normalize",
+      "path": "src/urdunlp/normalize.py",
+      "loc": 140,
+      "symbols": 3,
+      "importance": 0.39674,
+      "imports": [],
+      "imported_by": [
+        "demo",
+        "urdunlp",
+        "urdunlp.stopwords",
+        "urdunlp.tokenize",
+        "urdunlp.translit"
+      ]
+    },
+    {
+      "module": "urdunlp",
+      "path": "src/urdunlp/__init__.py",
+      "loc": 39,
+      "symbols": 0,
+      "importance": 0.12877,
+      "imports": [
+        "urdunlp.normalize",
+        "urdunlp.stopwords",
+        "urdunlp.tokenize",
+        "urdunlp.translit"
+      ],
+      "imported_by": [
+        "tests.test_urdunlp"
+      ]
+    },
+    {
+      "module": "urdunlp.stopwords",
+      "path": "src/urdunlp/stopwords.py",
+      "loc": 51,
+      "symbols": 2,
+      "importance": 0.11176,
+      "imports": [
+        "urdunlp.normalize"
+      ],
+      "imported_by": [
+        "demo",
+        "urdunlp"
+      ]
+    },
+    {
+      "module": "urdunlp.tokenize",
+      "path": "src/urdunlp/tokenize.py",
+      "loc": 124,
+      "symbols": 4,
+      "importance": 0.11176,
+      "imports": [
+        "urdunlp.normalize"
+      ],
+      "imported_by": [
+        "demo",
+        "urdunlp"
+      ]
+    },
+    {
+      "module": "urdunlp.translit",
+      "path": "src/urdunlp/translit.py",
+      "loc": 574,
+      "symbols": 6,
+      "importance": 0.11176,
+      "imports": [
+        "urdunlp.normalize"
+      ],
+      "imported_by": [
+        "demo",
+        "urdunlp"
+      ]
+    },
+    {
+      "module": "demo",
+      "path": "demo.py",
+      "loc": 60,
+      "symbols": 0,
+      "importance": 0.0696,
+      "imports": [
+        "urdunlp.normalize",
+        "urdunlp.stopwords",
+        "urdunlp.tokenize",
+        "urdunlp.translit"
+      ],
+      "imported_by": []
+    },
+    {
+      "module": "tests.test_urdunlp",
+      "path": "tests/test_urdunlp.py",
+      "loc": 217,
+      "symbols": 44,
+      "importance": 0.0696,
+      "imports": [
+        "urdunlp"
+      ],
+      "imported_by": []
+    }
+  ],
+  "entry_points": [
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_identifiers_survive_transliteration",
+      "name": "test_identifiers_survive_transliteration",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 166,
+      "fan_in": 0,
+      "docstring": "A transliterated URL is a broken URL."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_ordinary_english_words_still_transliterate",
+      "name": "test_ordinary_english_words_still_transliterate",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 181,
+      "fan_in": 0,
+      "docstring": "The guard is for identifiers only."
+    },
+    {
+      "qualname": "urdunlp.translit.Transliteration.lexicon_coverage",
+      "name": "lexicon_coverage",
+      "kind": "method",
+      "path": "src/urdunlp/translit.py",
+      "line": 458,
+      "fan_in": 0,
+      "docstring": "Share of alphabetic tokens resolved by the lexicon rather than guessed."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_identifier_inside_a_sentence_leaves_the_sentence_translated",
+      "name": "test_identifier_inside_a_sentence_leaves_the_sentence_translated",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 175,
+      "fan_in": 0,
+      "docstring": "Protecting the URL must not stop the words around it converting."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_short_vowels_are_inserted_between_consonants",
+      "name": "test_short_vowels_are_inserted_between_consonants",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 198,
+      "fan_in": 0,
+      "docstring": "Urdu does not write short vowels, so a literal mapping gives jmlh."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestNormalize.test_urdu_digits_are_kept_by_default",
+      "name": "test_urdu_digits_are_kept_by_default",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 49,
+      "fan_in": 0,
+      "docstring": "Converting them changes how the text reads, not how it is encoded."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTokenize.test_urdu_punctuation_is_separated_when_asked",
+      "name": "test_urdu_punctuation_is_separated_when_asked",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 84,
+      "fan_in": 0,
+      "docstring": "Urdu punctuation sits inside the Arabic block, so a naive letter range"
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_coverage_is_reported_honestly",
+      "name": "test_coverage_is_reported_honestly",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 147,
+      "fan_in": 0,
+      "docstring": "Callers must be able to tell a lookup from a guess."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_identifiers_do_not_count_against_lexicon_coverage",
+      "name": "test_identifiers_do_not_count_against_lexicon_coverage",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 189,
+      "fan_in": 0,
+      "docstring": "A URL is not a word the lexicon failed to resolve."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_spelling_variants_reach_the_same_word",
+      "name": "test_spelling_variants_reach_the_same_word",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 137,
+      "fan_in": 0,
+      "docstring": "Roman Urdu has no standard orthography; the lexicon absorbs the variation."
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestTransliteration.test_unknown_words_fall_back_to_rules",
+      "name": "test_unknown_words_fall_back_to_rules",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 142,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_urdunlp.TestIsUrdu.test_numbers_do_not_dilute_the_verdict",
+      "name": "test_numbers_do_not_dilute_the_verdict",
+      "kind": "method",
+      "path": "tests/test_urdunlp.py",
+      "line": 72,
+      "fan_in": 0,
+      "docstring": "Counting all characters would make a sentence with a year look less Urdu."
+    }
+  ],
+  "most_called": [
+    {
+      "qualname": "urdunlp.normalize.normalize",
+      "name": "normalize",
+      "kind": "function",
+      "path": "src/urdunlp/normalize.py",
+      "line": 76,
+      "fan_in": 18,
+      "docstring": "Normalise Urdu text."
+    },
+    {
+      "qualname": "urdunlp.translit.transliterate_to_urdu",
+      "name": "transliterate_to_urdu",
+      "kind": "function",
+      "path": "src/urdunlp/translit.py",
+      "line": 519,
+      "fan_in": 8,
+      "docstring": "Roman Urdu to Urdu script."
+    },
+    {
+      "qualname": "urdunlp.tokenize.words",
+      "name": "words",
+      "kind": "function",
+      "path": "src/urdunlp/tokenize.py",
+      "line": 89,
+      "fan_in": 6,
+      "docstring": "Split into word tokens."
+    },
+    {
+      "qualname": "urdunlp.translit.transliterate_with_confidence",
+      "name": "transliterate_with_confidence",
+      "kind": "function",
+      "path": "src/urdunlp/translit.py",
+      "line": 482,
+      "fan_in": 6,
+      "docstring": "Roman Urdu to Urdu script, reporting how each token was resolved."
+    },
+    {
+      "qualname": "urdunlp.translit.transliterate_to_roman",
+      "name": "transliterate_to_roman",
+      "kind": "function",
+      "path": "src/urdunlp/translit.py",
+      "line": 535,
+      "fan_in": 5,
+      "docstring": "Urdu script to Roman Urdu."
+    },
+    {
+      "qualname": "urdunlp.normalize.is_urdu",
+      "name": "is_urdu",
+      "kind": "function",
+      "path": "src/urdunlp/normalize.py",
+      "line": 122,
+      "fan_in": 4,
+      "docstring": "Whether the text is predominantly Urdu script."
+    },
+    {
+      "qualname": "urdunlp.stopwords.is_stopword",
+      "name": "is_stopword",
+      "kind": "function",
+      "path": "src/urdunlp/stopwords.py",
+      "line": 37,
+      "fan_in": 4,
+      "docstring": null
+    },
+    {
+      "qualname": "urdunlp.stopwords.remove_stopwords",
+      "name": "remove_stopwords",
+      "kind": "function",
+      "path": "src/urdunlp/stopwords.py",
+      "line": 44,
+      "fan_in": 3,
+      "docstring": "Filter a token list."
+    },
+    {
+      "qualname": "urdunlp.normalize.remove_urls_and_mentions",
+      "name": "remove_urls_and_mentions",
+      "kind": "function",
+      "path": "src/urdunlp/normalize.py",
+      "line": 135,
+      "fan_in": 2,
+      "docstring": "Strip URLs, @mentions and #hashtags. Common first step on scraped Urdu text."
+    },
+    {
+      "qualname": "urdunlp.tokenize.character_ngrams",
+      "name": "character_ngrams",
+      "kind": "function",
+      "path": "src/urdunlp/tokenize.py",
+      "line": 112,
+      "fan_in": 2,
+      "docstring": "Character n-grams over a word."
+    },
+    {
+      "qualname": "urdunlp.tokenize.fix_spacing",
+      "name": "fix_spacing",
+      "kind": "function",
+      "path": "src/urdunlp/tokenize.py",
+      "line": 103,
+      "fan_in": 2,
+      "docstring": "Insert the missing space in common merged compounds."
+    },
+    {
+      "qualname": "urdunlp.tokenize.sentences",
+      "name": "sentences",
+      "kind": "function",
+      "path": "src/urdunlp/tokenize.py",
+      "line": 81,
+      "fan_in": 1,
+      "docstring": "Split into sentences on Urdu and Latin terminators."
+    }
+  ],
+  "unresolved_sample": []
+}

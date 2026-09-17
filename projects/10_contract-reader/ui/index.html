@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>contract-reader</title>
+<style>
+:root{--bg:#fbfbfa;--panel:#fff;--ink:#1a1c1e;--muted:#6b7280;--line:#e5e7eb;
+      --low:#15803d;--med:#b45309;--high:#b91c1c;--accent:#2563eb;
+      --mono:ui-monospace,Consolas,Menlo,monospace}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0e1013;--panel:#16191d;--ink:#e6e8ea;--muted:#9099a3;--line:#262b31;
+  --low:#4ade80;--med:#fbbf24;--high:#f87171;--accent:#60a5fa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 ui-sans-serif,system-ui,'Segoe UI',sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding-block:2rem 4rem;padding-inline:20px}
+h1{font-size:1.2rem;margin:0 0 .3rem}
+.sub{color:var(--muted);font-size:.88rem;margin:0 0 1.5rem;max-width:64ch}
+h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  margin:2rem 0 .7rem}
+.row{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+input,select{font:inherit;padding:.45rem .7rem;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink)}
+input{flex:1;min-width:16rem}
+button{font:inherit;padding:.45rem 1rem;border-radius:8px;border:none;
+  background:var(--accent);color:#fff;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.7rem;
+  margin-bottom:1.25rem}
+.stat{border:1px solid var(--line);border-radius:10px;padding:.85rem;background:var(--panel)}
+.stat .v{font-size:1.5rem;font-weight:650}
+.stat .k{font-size:.74rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;font-size:.86rem}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+tr:last-child td{border-bottom:none}
+.mono{font-family:var(--mono);font-size:.85em}
+.path{font-family:var(--mono);font-size:.76em;color:var(--muted);word-break:break-all}
+.pill{display:inline-block;padding:.06rem .45rem;border-radius:999px;font-size:.66rem;
+  font-weight:650;text-transform:uppercase;
+  background:color-mix(in srgb,var(--low) 18%,transparent);color:var(--low)}
+.conflict{border-left:3px solid var(--high)}
+.note{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;
+  padding:.8rem 1rem;background:var(--panel);font-size:.86rem;margin-bottom:1.25rem}
+.err{color:var(--high)}
+.tablewrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>contract-reader</h1>
+  <p class="sub">Every claim carries the character span it came from. A phrase found inside
+     a sentence that disclaims it is rejected, not reported &mdash; which is how the Python
+     licence stops being read as GPL.</p>
+
+  <div class="row">
+    <input id="path" value="D:\github" />
+    <label class="path">project licence
+      <select id="project">
+        <option>MIT</option><option>Apache-2.0</option><option>BSD</option>
+        <option>GPL</option><option>MPL-2.0</option>
+      </select>
+    </label>
+    <button id="go">Survey</button>
+  </div>
+
+  <p id="err" class="err"></p>
+  <div id="out"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;" };
+function esc(value) {
+  return String(value).replace(/[&<>]/g, (c) => ESCAPES[c]);
+}
+
+$("go").addEventListener("click", async () => {
+  const button = $("go");
+  button.disabled = true;
+  $("err").textContent = "";
+  $("out").innerHTML = "";
+  try {
+    const url = "/api/survey?path=" + encodeURIComponent($("path").value)
+              + "&project=" + encodeURIComponent($("project").value);
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.error) { $("err").textContent = data.error; return; }
+    render(data);
+  } catch (err) {
+    $("err").textContent = String(err);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+function render(d) {
+  const conflicts = d.files.filter((f) => f.conflict);
+  const copyleftFamilies = ["GPL", "AGPL-3.0", "MPL-2.0", "LGPL"];
+  const copyleft = d.files.filter(
+    (f) => f.copyleft || copyleftFamilies.includes(f.family)
+  );
+
+  const parts = [];
+
+  parts.push('<div class="stats">'
+    + '<div class="stat"><div class="v">' + d.licences + '</div><div class="k">licence files</div></div>'
+    + '<div class="stat"><div class="v">' + Object.keys(d.families).length + '</div><div class="k">families</div></div>'
+    + '<div class="stat"><div class="v">' + copyleft.length + '</div><div class="k">copyleft</div></div>'
+    + '<div class="stat"><div class="v">' + d.rejected_matches + '</div><div class="k">matches rejected on context</div></div>'
+    + '</div>');
+
+  parts.push('<div class="note"><strong>' + d.rejected_matches + '</strong> keyword match(es) '
+    + 'were found and then rejected because the sentence around them disclaimed the term. '
+    + 'Without that check the Python licence reads as GPL, because it names the GPL in a '
+    + 'clause about Python 1.6.1 history.</div>');
+
+  const families = Object.entries(d.families).sort((a, b) => b[1] - a[1]);
+  parts.push('<h2>Families</h2><div class="tablewrap"><table><thead><tr><th>Family</th>'
+    + '<th>Files</th></tr></thead><tbody>');
+  for (const [name, count] of families) {
+    parts.push('<tr><td class="mono">' + esc(name) + '</td><td>' + count + '</td></tr>');
+  }
+  parts.push('</tbody></table></div>');
+
+  parts.push('<h2>Conflicts against a ' + esc(d.project) + ' project</h2>');
+  if (conflicts.length === 0) {
+    parts.push('<p class="path">None.</p>');
+  } else {
+    parts.push('<div class="tablewrap"><table><thead><tr><th>File</th><th>Family</th>'
+      + '<th>Why</th></tr></thead><tbody>');
+    for (const f of conflicts) {
+      parts.push('<tr class="conflict"><td class="path">' + esc(f.path) + '</td>'
+        + '<td class="mono">' + esc(f.family) + '</td>'
+        + '<td>' + esc(f.conflict) + '</td></tr>');
+    }
+    parts.push('</tbody></table></div>');
+  }
+
+  parts.push('<h2>Obligations by file</h2><div class="tablewrap"><table><thead><tr>'
+    + '<th>File</th><th>Family</th><th>Obligations</th></tr></thead><tbody>');
+  for (const f of d.files.slice(0, 120)) {
+    const pills = f.obligations
+      .map((o) => '<span class="pill">' + esc(o) + '</span>')
+      .join(" ");
+    parts.push('<tr><td class="path">' + esc(f.path) + '</td>'
+      + '<td class="mono">' + esc(f.family) + '</td>'
+      + '<td>' + pills + '</td></tr>');
+  }
+  parts.push('</tbody></table></div>');
+
+  $("out").innerHTML = parts.join("");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+d6ad6e273ea14e0246b10a9436a6d7903e7c70ec 2026-09-15 10:12:55 +0500 hammas159 Put the twenty projects in a table, matching the other multi-project repos
+93abf40497d7d50de8f314c91f6c3f5f60acf077 2026-09-14 08:13:26 +0500 hammas159 Presentation: centred header, anchor nav, through-line flowchart, keywords
+084f50bd8616aba7a98b05d2bde1f138125e5f94 2026-09-13 21:12:42 +0500 Muhammad Hammas Fix the CI Lint step: reformat 11 files and pin ruff to a minor range
+32fff449a65234b7e8c7f510db05336e2b115387 2026-09-13 16:02:51 +0500 Muhammad Hammas Add References section to all 20 projects, crediting the original method/paper
+5b52961e643184ee6b06dbde76ad4fa371047f4f 2026-09-12 07:26:13 +0500 Muhammad Hammas README: name each project's stack in its title
+2b94f12e0f69114b041cb392e34824f132669273 2026-09-11 17:38:11 +0500 Muhammad Hammas Correct the project count: ten -> twenty
+8518eada865ab72d79c3307cfa9e7b3d61137e0d 2026-09-11 17:31:45 +0500 Muhammad Hammas Ten more projects: pricing, calibration, survival, recsys, reduction, anomaly, time series, encoding, regularisation, baskets
+0e30aa69b37d076bd21df4968af0a31df5f8e3cb 2026-09-11 12:37:06 +0500 hammas159 Ten machine-learning projects on public data

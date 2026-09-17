@@ -1,0 +1,473 @@
+{
+  "name": "rag-forge",
+  "root": "D:\\github\\rag-forge",
+  "modules": 34,
+  "symbols": 128,
+  "loc": 2071,
+  "total_calls": 624,
+  "in_scope_calls": 146,
+  "resolved_calls": 133,
+  "resolution_rate": 0.2131,
+  "repo_resolution_rate": 0.911,
+  "excluded_projects": [],
+  "parse_errors": [],
+  "core_modules": [
+    {
+      "module": "ragforge.types",
+      "path": "src/ragforge/types.py",
+      "loc": 47,
+      "symbols": 4,
+      "importance": 0.16091,
+      "imports": [],
+      "imported_by": [
+        "demo",
+        "ragforge.api.main",
+        "ragforge.generate.answerer",
+        "ragforge.generate.citations",
+        "ragforge.ingest.chunker",
+        "ragforge.retrieve.hybrid",
+        "ragforge.store.base",
+        "ragforge.store.postgres",
+        "ragforge.store.sqlite",
+        "tests.test_citations",
+        "tests.test_store_sqlite"
+      ]
+    },
+    {
+      "module": "ragforge.config",
+      "path": "src/ragforge/config.py",
+      "loc": 53,
+      "symbols": 2,
+      "importance": 0.1295,
+      "imports": [],
+      "imported_by": [
+        "ragforge.api.main",
+        "ragforge.cli",
+        "ragforge.db",
+        "ragforge.embed",
+        "ragforge.eval.harness",
+        "ragforge.generate.answerer",
+        "ragforge.ingest.pipeline",
+        "ragforge.llm",
+        "ragforge.retrieve.hybrid",
+        "ragforge.store",
+        "tests.test_config",
+        "ui.app"
+      ]
+    },
+    {
+      "module": "ragforge.ingest.chunker",
+      "path": "src/ragforge/ingest/chunker.py",
+      "loc": 127,
+      "symbols": 4,
+      "importance": 0.04314,
+      "imports": [
+        "ragforge.types"
+      ],
+      "imported_by": [
+        "ragforge.ingest",
+        "ragforge.ingest.pipeline",
+        "tests.test_chunker"
+      ]
+    },
+    {
+      "module": "ragforge.generate.answerer",
+      "path": "src/ragforge/generate/answerer.py",
+      "loc": 96,
+      "symbols": 3,
+      "importance": 0.03848,
+      "imports": [
+        "ragforge.config",
+        "ragforge.embed",
+        "ragforge.generate.citations",
+        "ragforge.generate.prompts",
+        "ragforge.llm",
+        "ragforge.retrieve",
+        "ragforge.types"
+      ],
+      "imported_by": [
+        "ragforge.generate"
+      ]
+    },
+    {
+      "module": "ragforge.store",
+      "path": "src/ragforge/store/__init__.py",
+      "loc": 27,
+      "symbols": 1,
+      "importance": 0.03796,
+      "imports": [
+        "ragforge.config",
+        "ragforge.store.base",
+        "ragforge.store.postgres",
+        "ragforge.store.sqlite"
+      ],
+      "imported_by": [
+        "ragforge.api.main",
+        "ragforge.cli",
+        "ragforge.ingest.pipeline",
+        "ragforge.retrieve.hybrid",
+        "tests.test_hybrid_integration",
+        "ui.app"
+      ]
+    },
+    {
+      "module": "ragforge.retrieve.hybrid",
+      "path": "src/ragforge/retrieve/hybrid.py",
+      "loc": 78,
+      "symbols": 3,
+      "importance": 0.0361,
+      "imports": [
+        "ragforge.config",
+        "ragforge.embed",
+        "ragforge.store",
+        "ragforge.types"
+      ],
+      "imported_by": [
+        "ragforge.retrieve"
+      ]
+    },
+    {
+      "module": "ragforge.embed",
+      "path": "src/ragforge/embed.py",
+      "loc": 54,
+      "symbols": 6,
+      "importance": 0.03314,
+      "imports": [
+        "ragforge.config"
+      ],
+      "imported_by": [
+        "ragforge.generate.answerer",
+        "ragforge.ingest.pipeline",
+        "ragforge.retrieve.hybrid",
+        "tests.test_hybrid_integration"
+      ]
+    },
+    {
+      "module": "ragforge.generate.citations",
+      "path": "src/ragforge/generate/citations.py",
+      "loc": 94,
+      "symbols": 3,
+      "importance": 0.03106,
+      "imports": [
+        "ragforge.types"
+      ],
+      "imported_by": [
+        "demo",
+        "ragforge.generate.answerer",
+        "tests.test_citations"
+      ]
+    },
+    {
+      "module": "ragforge.ingest",
+      "path": "src/ragforge/ingest/__init__.py",
+      "loc": 5,
+      "symbols": 0,
+      "importance": 0.02881,
+      "imports": [
+        "ragforge.ingest.chunker",
+        "ragforge.ingest.pipeline"
+      ],
+      "imported_by": [
+        "deploy.space.app",
+        "ragforge.cli"
+      ]
+    },
+    {
+      "module": "ragforge.generate",
+      "path": "src/ragforge/generate/__init__.py",
+      "loc": 4,
+      "symbols": 0,
+      "importance": 0.02849,
+      "imports": [
+        "ragforge.generate.answerer"
+      ],
+      "imported_by": [
+        "ragforge.api.main",
+        "ragforge.cli",
+        "ragforge.eval.harness",
+        "ui.app"
+      ]
+    },
+    {
+      "module": "ragforge.store.sqlite",
+      "path": "src/ragforge/store/sqlite.py",
+      "loc": 159,
+      "symbols": 13,
+      "importance": 0.02839,
+      "imports": [
+        "ragforge.types"
+      ],
+      "imported_by": [
+        "ragforge.store",
+        "tests.test_store_sqlite"
+      ]
+    },
+    {
+      "module": "ragforge.ingest.pipeline",
+      "path": "src/ragforge/ingest/pipeline.py",
+      "loc": 60,
+      "symbols": 2,
+      "importance": 0.02651,
+      "imports": [
+        "ragforge.config",
+        "ragforge.embed",
+        "ragforge.ingest.chunker",
+        "ragforge.ingest.readers",
+        "ragforge.store"
+      ],
+      "imported_by": [
+        "ragforge.ingest"
+      ]
+    }
+  ],
+  "entry_points": [
+    {
+      "qualname": "ragforge.cli.status",
+      "name": "status",
+      "kind": "function",
+      "path": "src/ragforge/cli.py",
+      "line": 67,
+      "fan_in": 0,
+      "docstring": "Check that every dependency this project needs is actually reachable."
+    },
+    {
+      "qualname": "ragforge.cli.ask",
+      "name": "ask",
+      "kind": "function",
+      "path": "src/ragforge/cli.py",
+      "line": 25,
+      "fan_in": 0,
+      "docstring": "Ask a question against the index."
+    },
+    {
+      "qualname": "ragforge.store.sqlite.SqliteStore.ensure_schema",
+      "name": "ensure_schema",
+      "kind": "method",
+      "path": "src/ragforge/store/sqlite.py",
+      "line": 45,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.api.main.ask",
+      "name": "ask",
+      "kind": "function",
+      "path": "src/ragforge/api/main.py",
+      "line": 57,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.store.postgres.PostgresStore.add_chunks",
+      "name": "add_chunks",
+      "kind": "method",
+      "path": "src/ragforge/store/postgres.py",
+      "line": 37,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.store.sqlite.SqliteStore.add_chunks",
+      "name": "add_chunks",
+      "kind": "method",
+      "path": "src/ragforge/store/sqlite.py",
+      "line": 92,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.llm.HuggingFaceBackend.complete",
+      "name": "complete",
+      "kind": "method",
+      "path": "src/ragforge/llm.py",
+      "line": 92,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.store.sqlite.SqliteStore.sparse",
+      "name": "sparse",
+      "kind": "method",
+      "path": "src/ragforge/store/sqlite.py",
+      "line": 129,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.llm.OllamaBackend.complete",
+      "name": "complete",
+      "kind": "method",
+      "path": "src/ragforge/llm.py",
+      "line": 32,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_hybrid_integration.TestSchema.test_both_indexes_exist",
+      "name": "test_both_indexes_exist",
+      "kind": "method",
+      "path": "tests/test_hybrid_integration.py",
+      "line": 91,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_hybrid_integration.TestHybridFusion.test_both_halves_contribute",
+      "name": "test_both_halves_contribute",
+      "kind": "method",
+      "path": "tests/test_hybrid_integration.py",
+      "line": 59,
+      "fan_in": 0,
+      "docstring": "The assertion that would have caught the bug: a hit ranked by *both*"
+    },
+    {
+      "qualname": "ragforge.store.postgres.PostgresStore.upsert_document",
+      "name": "upsert_document",
+      "kind": "method",
+      "path": "src/ragforge/store/postgres.py",
+      "line": 26,
+      "fan_in": 0,
+      "docstring": null
+    }
+  ],
+  "most_called": [
+    {
+      "qualname": "ragforge.config.get_settings",
+      "name": "get_settings",
+      "kind": "function",
+      "path": "src/ragforge/config.py",
+      "line": 51,
+      "fan_in": 13,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.store.get_store",
+      "name": "get_store",
+      "kind": "function",
+      "path": "src/ragforge/store/__init__.py",
+      "line": 12,
+      "fan_in": 10,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.db.connection",
+      "name": "connection",
+      "kind": "function",
+      "path": "src/ragforge/db.py",
+      "line": 37,
+      "fan_in": 9,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.types.Chunk",
+      "name": "Chunk",
+      "kind": "class",
+      "path": "src/ragforge/types.py",
+      "line": 6,
+      "fan_in": 7,
+      "docstring": "A retrievable span of a document, with offsets back into the original text."
+    },
+    {
+      "qualname": "ragforge.generate.citations.verify_quotes",
+      "name": "verify_quotes",
+      "kind": "function",
+      "path": "src/ragforge/generate/citations.py",
+      "line": 55,
+      "fan_in": 6,
+      "docstring": "Return (verified citations, list of quotes that could not be located)."
+    },
+    {
+      "qualname": "ragforge.ingest.chunker.chunk_text",
+      "name": "chunk_text",
+      "kind": "function",
+      "path": "src/ragforge/ingest/chunker.py",
+      "line": 42,
+      "fan_in": 6,
+      "docstring": "Pack paragraphs into chunks of <= max_tokens, overlapping by overlap_tokens."
+    },
+    {
+      "qualname": "tests.test_store_sqlite._seed",
+      "name": "_seed",
+      "kind": "function",
+      "path": "tests/test_store_sqlite.py",
+      "line": 27,
+      "fan_in": 6,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.eval.harness.run_eval.avg",
+      "name": "avg",
+      "kind": "function",
+      "path": "src/ragforge/eval/harness.py",
+      "line": 80,
+      "fan_in": 5,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.generate.answerer.answer_question",
+      "name": "answer_question",
+      "kind": "function",
+      "path": "src/ragforge/generate/answerer.py",
+      "line": 55,
+      "fan_in": 4,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.retrieve.hybrid.retrieve",
+      "name": "retrieve",
+      "kind": "function",
+      "path": "src/ragforge/retrieve/hybrid.py",
+      "line": 46,
+      "fan_in": 4,
+      "docstring": null
+    },
+    {
+      "qualname": "ragforge.types.ScoredChunk",
+      "name": "ScoredChunk",
+      "kind": "class",
+      "path": "src/ragforge/types.py",
+      "line": 20,
+      "fan_in": 4,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_citations._retrieved",
+      "name": "_retrieved",
+      "kind": "function",
+      "path": "tests/test_citations.py",
+      "line": 7,
+      "fan_in": 4,
+      "docstring": null
+    }
+  ],
+  "unresolved_sample": [
+    [
+      "seeded.sparse",
+      5
+    ],
+    [
+      "store.counts",
+      2
+    ],
+    [
+      "store.sparse",
+      2
+    ],
+    [
+      "app",
+      1
+    ],
+    [
+      "store.upsert_document",
+      1
+    ],
+    [
+      "store.add_chunks",
+      1
+    ],
+    [
+      "store.dense",
+      1
+    ]
+  ]
+}

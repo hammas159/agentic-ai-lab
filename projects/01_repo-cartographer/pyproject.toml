@@ -1,0 +1,45 @@
+[project]
+name = "repo-cartographer"
+version = "0.1.0"
+description = "Map an unfamiliar Python codebase from its AST. No embeddings, no model, no dependencies."
+readme = "README.md"
+authors = [
+    { name = "Muhammad Hammas", email = "214618908+hammas159@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+
+# The map is built with the standard library alone. tree-sitter was tried first
+# and removed: for Python, `ast` resolves more calls because it carries real
+# scope information. See README, "What I wrote vs what I installed".
+dependencies = []
+
+[project.optional-dependencies]
+# Only the explanation layer needs a model, and only over HTTP to local ollama.
+explain = ["httpx>=0.27"]
+
+[project.scripts]
+cartographer = "cartographer.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "cartographer"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 96
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]

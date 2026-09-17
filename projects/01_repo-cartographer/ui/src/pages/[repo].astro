@@ -1,0 +1,121 @@
+---
+import Base from "../layouts/Base.astro";
+
+export function getStaticPaths() {
+  const maps = import.meta.glob("/public/data/*.json", { eager: true });
+  return Object.entries(maps).map(([path, mod]: [string, any]) => {
+    const d = mod.default ?? mod;
+    return {
+      params: { repo: path.split("/").pop()!.replace(/\.json$/, "") },
+      props: { d },
+    };
+  });
+}
+
+const { d } = Astro.props;
+const pct = (n: number) => `${Math.round(n * 100)}%`;
+const band = (n: number) => (n >= 0.9 ? "good" : n >= 0.7 ? "warn" : "bad");
+const maxImportance = Math.max(...d.core_modules.map((m: any) => m.importance), 1e-9);
+---
+
+<Base title={d.name} subtitle={d.root}>
+  <div class="stats">
+    <div class="stat"><div class="v">{d.modules}</div><div class="k">modules</div></div>
+    <div class="stat"><div class="v">{d.symbols}</div><div class="k">definitions</div></div>
+    <div class="stat"><div class="v">{d.loc.toLocaleString()}</div><div class="k">lines</div></div>
+    <div class="stat">
+      <div class={`v rate ${band(d.repo_resolution_rate)}`}>{pct(d.repo_resolution_rate)}</div>
+      <div class="k">repo calls resolved</div>
+    </div>
+  </div>
+
+  <div class="note">
+    {d.resolved_calls} of {d.in_scope_calls} repo-internal calls resolved. There are
+    {d.total_calls} call sites in total; the remainder are builtins, the standard library,
+    or methods on third-party objects - none of which could bind to a definition here.
+  </div>
+
+  {d.excluded_projects.length > 0 && (
+    <div class="note">
+      <strong>Excluded {d.excluded_projects.length} vendored project(s):</strong>{" "}
+      <span class="mono">{d.excluded_projects.join(", ")}</span> - each carries its own
+      project file, so it is a different codebase living inside this one.
+    </div>
+  )}
+
+  <h2>Load-bearing modules</h2>
+  <p class="path">PageRank over this repository's own imports: what is depended upon by
+    things that are themselves depended upon.</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Module</th><th>Path</th><th class="num">Lines</th><th class="num">Imported by</th><th>Weight</th></tr>
+      </thead>
+      <tbody>
+        {d.core_modules.map((m: any) => (
+          <tr>
+            <td class="mono">{m.module}</td>
+            <td class="path">{m.path}</td>
+            <td class="num">{m.loc}</td>
+            <td class="num">{m.imported_by.length}</td>
+            <td><div class="bar"><span style={`width:${(m.importance / maxImportance) * 100}%`}></span></div></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Most-called definitions</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">Callers</th><th>Definition</th><th>Location</th></tr></thead>
+      <tbody>
+        {d.most_called.map((s: any) => (
+          <tr>
+            <td class="num">{s.fan_in}</td>
+            <td class="mono">{s.qualname}</td>
+            <td class="path">{s.path}:{s.line}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Entry points</h2>
+  <p class="path">Public definitions nothing inside the repository calls - where the outside
+    world gets in.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Definition</th><th>Location</th><th>Docstring</th></tr></thead>
+      <tbody>
+        {d.entry_points.map((s: any) => (
+          <tr>
+            <td class="mono">{s.qualname}</td>
+            <td class="path">{s.path}:{s.line}</td>
+            <td>{s.docstring ?? ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {d.unresolved_sample.length > 0 && (
+    <>
+      <h2>Unresolved, and honest about it</h2>
+      <p class="path">Names that point at this repository but did not bind. Usually
+        callables passed as arguments, or dispatch through a dictionary.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Name</th><th class="num">Occurrences</th></tr></thead>
+          <tbody>
+            {d.unresolved_sample.map(([name, count]: [string, number]) => (
+              <tr><td class="mono">{name}</td><td class="num">{count}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+
+  <p style="margin-top:2.5rem"><a href={import.meta.env.BASE_URL}>&larr; all repositories</a></p>
+</Base>

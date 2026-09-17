@@ -1,0 +1,45 @@
+[project]
+name = "csv-analyst"
+version = "0.1.0"
+description = "Profile a CSV, compute only what validates, and never narrate a number that was not computed."
+readme = "README.md"
+authors = [
+    { name = "Muhammad Hammas", email = "214618908+hammas159@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+
+# csv reads, sqlite3 queries, statistics summarises, and the charts are SVG
+# written by hand. DuckDB and pandas were the planned stack and neither is
+# needed for aggregates over a single table.
+dependencies = []
+
+[project.optional-dependencies]
+# The notebook view only. The analysis never imports it.
+ui = ["marimo>=0.9"]
+
+[project.scripts]
+csv-analyst = "csvanalyst.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "csvanalyst"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 96
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]

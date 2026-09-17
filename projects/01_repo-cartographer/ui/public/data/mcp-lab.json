@@ -1,0 +1,358 @@
+{
+  "name": "mcp-lab",
+  "root": "D:\\github\\mcp-lab",
+  "modules": 52,
+  "symbols": 299,
+  "loc": 5932,
+  "total_calls": 1649,
+  "in_scope_calls": 214,
+  "resolved_calls": 195,
+  "resolution_rate": 0.1183,
+  "repo_resolution_rate": 0.9112,
+  "excluded_projects": [],
+  "parse_errors": [],
+  "core_modules": [
+    {
+      "module": "projects.01_mcp_redteam_platform.agent",
+      "path": "projects/01_mcp_redteam_platform/agent/__init__.py",
+      "loc": 1,
+      "symbols": 0,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.agent.client",
+      "path": "projects/01_mcp_redteam_platform/agent/client.py",
+      "loc": 124,
+      "symbols": 6,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.config",
+      "path": "projects/01_mcp_redteam_platform/config.py",
+      "loc": 27,
+      "symbols": 1,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam",
+      "path": "projects/01_mcp_redteam_platform/redteam/__init__.py",
+      "loc": 1,
+      "symbols": 0,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.common",
+      "path": "projects/01_mcp_redteam_platform/redteam/common.py",
+      "loc": 15,
+      "symbols": 1,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.decoy_tools",
+      "path": "projects/01_mcp_redteam_platform/redteam/decoy_tools.py",
+      "loc": 64,
+      "symbols": 4,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.m1_answer_leakage",
+      "path": "projects/01_mcp_redteam_platform/redteam/m1_answer_leakage.py",
+      "loc": 121,
+      "symbols": 7,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.m2_tool_poisoning",
+      "path": "projects/01_mcp_redteam_platform/redteam/m2_tool_poisoning.py",
+      "loc": 107,
+      "symbols": 4,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.m3_path_traversal",
+      "path": "projects/01_mcp_redteam_platform/redteam/m3_path_traversal.py",
+      "loc": 64,
+      "symbols": 1,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.m4_lethal_trifecta",
+      "path": "projects/01_mcp_redteam_platform/redteam/m4_lethal_trifecta.py",
+      "loc": 97,
+      "symbols": 5,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.m5_tool_bloat",
+      "path": "projects/01_mcp_redteam_platform/redteam/m5_tool_bloat.py",
+      "loc": 87,
+      "symbols": 4,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    },
+    {
+      "module": "projects.01_mcp_redteam_platform.redteam.run_all",
+      "path": "projects/01_mcp_redteam_platform/redteam/run_all.py",
+      "loc": 36,
+      "symbols": 1,
+      "importance": 0.01923,
+      "imports": [],
+      "imported_by": []
+    }
+  ],
+  "entry_points": [
+    {
+      "qualname": "projects.06_fever_fact_verification.pipeline.run_pipeline",
+      "name": "run_pipeline",
+      "kind": "function",
+      "path": "projects/06_fever_fact_verification/pipeline.py",
+      "line": 71,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.04_swebench_coding_agent.sandbox_runner.run_instance",
+      "name": "run_instance",
+      "kind": "function",
+      "path": "projects/04_swebench_coding_agent/sandbox_runner.py",
+      "line": 111,
+      "fan_in": 0,
+      "docstring": "Full pipeline for one instance. Returns a JSON-able results dict."
+    },
+    {
+      "qualname": "projects.06_fever_fact_verification.data.fetch_wiki_pages",
+      "name": "fetch_wiki_pages",
+      "kind": "function",
+      "path": "projects/06_fever_fact_verification/data.py",
+      "line": 199,
+      "fan_in": 0,
+      "docstring": "Fetch current live-Wikipedia plaintext for `target_titles`."
+    },
+    {
+      "qualname": "projects.02_hotpotqa_multihop_rag.pipeline.score_example",
+      "name": "score_example",
+      "kind": "function",
+      "path": "projects/02_hotpotqa_multihop_rag/pipeline.py",
+      "line": 300,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.04_swebench_coding_agent.context_retrieval.find_relevant_files",
+      "name": "find_relevant_files",
+      "kind": "function",
+      "path": "projects/04_swebench_coding_agent/context_retrieval.py",
+      "line": 38,
+      "fan_in": 0,
+      "docstring": "Grep the checkout for problem-statement keywords, rank .py files by"
+    },
+    {
+      "qualname": "projects.06_fever_fact_verification.data.sample_claims",
+      "name": "sample_claims",
+      "kind": "function",
+      "path": "projects/06_fever_fact_verification/data.py",
+      "line": 129,
+      "fan_in": 0,
+      "docstring": "Sample a fixed-seed, label-stratified set of claims from FEVER validation."
+    },
+    {
+      "qualname": "projects.03_bfcl_tool_calling.harness.call_model_on_case",
+      "name": "call_model_on_case",
+      "kind": "function",
+      "path": "projects/03_bfcl_tool_calling/harness.py",
+      "line": 83,
+      "fan_in": 0,
+      "docstring": "Invoke one model on one BFCL case and return raw + normalized results."
+    },
+    {
+      "qualname": "projects.02_hotpotqa_multihop_rag.pipeline.two_hop_retrieve",
+      "name": "two_hop_retrieve",
+      "kind": "function",
+      "path": "projects/02_hotpotqa_multihop_rag/pipeline.py",
+      "line": 175,
+      "fan_in": 0,
+      "docstring": "Two-hop dense retrieval."
+    },
+    {
+      "qualname": "projects.06_fever_fact_verification.retrieval.embed_texts",
+      "name": "embed_texts",
+      "kind": "function",
+      "path": "projects/06_fever_fact_verification/retrieval.py",
+      "line": 71,
+      "fan_in": 0,
+      "docstring": "Embed a list of texts via the local Ollama `/api/embeddings` endpoint."
+    },
+    {
+      "qualname": "projects.03_bfcl_tool_calling.bfcl_data.load_category",
+      "name": "load_category",
+      "kind": "function",
+      "path": "projects/03_bfcl_tool_calling/bfcl_data.py",
+      "line": 67,
+      "fan_in": 0,
+      "docstring": "Return a list of merged test cases for a category."
+    },
+    {
+      "qualname": "projects.04_swebench_coding_agent.patch_generator.generate_patch",
+      "name": "generate_patch",
+      "kind": "function",
+      "path": "projects/04_swebench_coding_agent/patch_generator.py",
+      "line": 73,
+      "fan_in": 0,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.06_fever_fact_verification.verdict.get_verdict",
+      "name": "get_verdict",
+      "kind": "function",
+      "path": "projects/06_fever_fact_verification/verdict.py",
+      "line": 82,
+      "fan_in": 0,
+      "docstring": "Call the local Ollama chat model and return {label, raw_response}."
+    }
+  ],
+  "most_called": [
+    {
+      "qualname": "projects.01_mcp_redteam_platform.redteam.decoy_tools.DecoyToolSpec",
+      "name": "DecoyToolSpec",
+      "kind": "class",
+      "path": "projects/01_mcp_redteam_platform/redteam/decoy_tools.py",
+      "line": 13,
+      "fan_in": 28,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.02_hotpotqa_multihop_rag.run_experiment.mean",
+      "name": "mean",
+      "kind": "function",
+      "path": "projects/02_hotpotqa_multihop_rag/run_experiment.py",
+      "line": 34,
+      "fan_in": 10,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.04_swebench_coding_agent.repo_checkout._run",
+      "name": "_run",
+      "kind": "function",
+      "path": "projects/04_swebench_coding_agent/repo_checkout.py",
+      "line": 44,
+      "fan_in": 5,
+      "docstring": null
+    },
+    {
+      "qualname": "tests.test_06_fever._load",
+      "name": "_load",
+      "kind": "function",
+      "path": "tests/test_06_fever.py",
+      "line": 26,
+      "fan_in": 5,
+      "docstring": "Load projects/06.../<name>.py under the SAME project-unique sys.modules key"
+    },
+    {
+      "qualname": "projects.02_hotpotqa_multihop_rag.pipeline.normalize_answer",
+      "name": "normalize_answer",
+      "kind": "function",
+      "path": "projects/02_hotpotqa_multihop_rag/pipeline.py",
+      "line": 253,
+      "fan_in": 4,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.04_swebench_coding_agent.sandbox_runner._docker_run",
+      "name": "_docker_run",
+      "kind": "function",
+      "path": "projects/04_swebench_coding_agent/sandbox_runner.py",
+      "line": 71,
+      "fan_in": 4,
+      "docstring": "Run `script` with bash inside the sandbox container, with eval_dir"
+    },
+    {
+      "qualname": "projects.06_fever_fact_verification.pipeline._sibling",
+      "name": "_sibling",
+      "kind": "function",
+      "path": "projects/06_fever_fact_verification/pipeline.py",
+      "line": 20,
+      "fan_in": 4,
+      "docstring": "See data.py's `_sibling` docstring for why this isn't a bare `import config`."
+    },
+    {
+      "qualname": "tests.test_05_truthfulqa._load",
+      "name": "_load",
+      "kind": "function",
+      "path": "tests/test_05_truthfulqa.py",
+      "line": 25,
+      "fan_in": 4,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.02_hotpotqa_multihop_rag.pipeline.HopTrace",
+      "name": "HopTrace",
+      "kind": "class",
+      "path": "projects/02_hotpotqa_multihop_rag/pipeline.py",
+      "line": 85,
+      "fan_in": 3,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.02_hotpotqa_multihop_rag.pipeline.embed_texts",
+      "name": "embed_texts",
+      "kind": "function",
+      "path": "projects/02_hotpotqa_multihop_rag/pipeline.py",
+      "line": 156,
+      "fan_in": 3,
+      "docstring": "Batch-embed via Ollama's /api/embed endpoint."
+    },
+    {
+      "qualname": "projects.03_bfcl_tool_calling.schema_convert._convert_node",
+      "name": "_convert_node",
+      "kind": "function",
+      "path": "projects/03_bfcl_tool_calling/schema_convert.py",
+      "line": 24,
+      "fan_in": 3,
+      "docstring": null
+    },
+    {
+      "qualname": "projects.05_truthfulqa_hallucination.run_eval.evaluate.checkpoint",
+      "name": "checkpoint",
+      "kind": "function",
+      "path": "projects/05_truthfulqa_hallucination/run_eval.py",
+      "line": 145,
+      "fan_in": 3,
+      "docstring": null
+    }
+  ],
+  "unresolved_sample": [
+    [
+      "progress_cb",
+      16
+    ],
+    [
+      "func",
+      2
+    ],
+    [
+      "CitedAnswer.model_validate",
+      1
+    ]
+  ]
+}
