@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Map an unfamiliar Python codebase from its AST. No embeddings, no model, no dependencies."
 readme = "README.md"
 authors = [
-    { name = "Muhammad Hammas", email = "214618908+hammas159@users.noreply.github.com" }
+    { name = "Muhammad Hammas", email = "214618908+hammasbuilds@users.noreply.github.com" }
 ]
 requires-python = ">=3.11"
 
