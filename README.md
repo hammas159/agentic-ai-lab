@@ -1,4 +1,4 @@
-<h1 align="center">agentic-ai-lab</h1>
+<h1 align="center">agentic-ai-lab (Python · NiceGUI · marimo · zero dependencies)</h1>
 <p align="center"><i>Eleven agent-infrastructure tools, each built around something that turned out to be wrong</i></p>
 
 <p align="center">
