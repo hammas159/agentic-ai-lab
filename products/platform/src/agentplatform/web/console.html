@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{DOMAIN}} — agent console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#F6F4EF; --surface:#fff; --surface-2:#EFEBE3; --line:#DFDAD0;
+    --ink:#1A1916; --ink-2:#56534B; --ink-3:#6B6760;
+    --agent:#1F5F55; --agent-tint:#E3EDEA;
+    --stop:#B4502A; --stop-tint:#F6E6DE;
+    --wait:#8A6212; --wait-tint:#F4EBD7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#121311; --surface:#1A1C19; --surface-2:#22241F; --line:#30332C;
+      --ink:#EDEAE2; --ink-2:#A8A49A; --ink-3:#9E9A90;
+      --agent:#5FBFAE; --agent-tint:#1E2E2A;
+      --stop:#E8845A; --stop-tint:#2E211A;
+      --wait:#DCA94A; --wait-tint:#2C2617;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#121311; --surface:#1A1C19; --surface-2:#22241F; --line:#30332C;
+    --ink:#EDEAE2; --ink-2:#A8A49A; --ink-3:#9E9A90;
+    --agent:#5FBFAE; --agent-tint:#1E2E2A;
+    --stop:#E8845A; --stop-tint:#2E211A;
+    --wait:#DCA94A; --wait-tint:#2C2617;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font-family:"IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  a{color:var(--agent)}
+  header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+         padding:18px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+  .brand{display:flex;flex-direction:column;gap:1px;flex-grow:1;min-width:200px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;
+           text-transform:uppercase;color:var(--ink-3)}
+  h1{margin:0;font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+     font-size:28px;line-height:1.05}
+  .pill{display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;
+        border:1px solid var(--line);border-radius:10px;background:var(--ground);
+        font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2)}
+  .dot{width:8px;height:8px;border-radius:4px;background:var(--agent);flex-shrink:0}
+  button{font:inherit;cursor:pointer}
+  .btn{height:44px;padding:0 16px;border:0;border-radius:10px;background:var(--agent);
+       color:#fff;font-size:13.5px;font-weight:600}
+  .btn.ghost{background:var(--surface);color:var(--ink-2);border:1px solid var(--line)}
+  .btn.stop{background:var(--stop-tint);color:var(--stop);border:1px solid var(--stop)}
+  main{display:grid;gap:16px;padding:16px;grid-template-columns:1fr}
+  @media(min-width:900px){main{grid-template-columns:360px 1fr}}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
+  h2{margin:0 0 12px;font-size:13px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+  h2 .count{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--ink-3)}
+  .card{border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin-bottom:10px;
+        background:var(--ground)}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .chip{font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:5px;
+        background:var(--surface-2);color:var(--ink-2)}
+  .chip.wait{background:var(--wait-tint);color:var(--wait)}
+  .chip.done{background:var(--agent-tint);color:var(--agent)}
+  .chip.fail{background:var(--stop-tint);color:var(--stop)}
+  .muted{color:var(--ink-3);font-size:11.5px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+     color:var(--ink-3);font-weight:600;padding:0 8px 8px 0}
+  td{padding:9px 8px 9px 0;border-top:1px solid var(--line);vertical-align:top}
+  .empty{padding:22px 0;text-align:center;color:var(--ink-3);font-size:12.5px}
+  form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  input,textarea{font:inherit;font-size:13px;padding:0 12px;height:44px;color:var(--ink);
+    background:var(--ground);border:1px solid var(--line);border-radius:10px;min-width:0}
+  textarea{height:76px;padding:10px 12px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;width:100%}
+  label{font-size:11.5px;color:var(--ink-3);display:block;margin-bottom:4px}
+  .field{flex:1 1 130px}
+  .trace{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-2);
+         line-height:1.6;word-break:break-word}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="eyebrow">{{DOMAIN}} · agent console</span>
+    <h1>Operations</h1>
+  </div>
+  <div class="pill"><span class="dot" id="health-dot"></span><span id="health">connecting</span></div>
+  <div class="pill"><span id="lag">lag 0</span></div>
+  <button class="btn ghost" id="drain" type="button">Run worker</button>
+  <button class="btn ghost" id="theme" type="button" aria-label="Toggle theme">Theme</button>
+</header>
+
+<main>
+  <div>
+    <section>
+      <h2>Start work</h2>
+      <form id="intake">
+        <div class="field">
+          <label for="entity">Entity</label>
+          <input id="entity" name="entity" value="4192" required>
+        </div>
+        <div style="width:100%">
+          <label for="payload">Payload (JSON)</label>
+          <textarea id="payload" name="payload">{}</textarea>
+        </div>
+        <button class="btn" type="submit">Submit</button>
+      </form>
+      <p class="muted" id="intake-note">Publishes to <code>{{DOMAIN}}.tasks</code> and returns. The
+      graph runs when a worker drains the queue — one GPU, its own pace.</p>
+    </section>
+
+    <section style="margin-top:16px">
+      <h2>Waiting on you <span class="count" id="approval-count">0</span></h2>
+      <div id="approvals"><div class="empty">Nothing paused.</div></div>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>Runs <span class="count" id="run-count">0</span></h2>
+      <div id="runs"><div class="empty">No runs yet.</div></div>
+    </section>
+
+    <section style="margin-top:16px">
+      <h2>Events <span class="count mono" id="event-topic">{{DOMAIN}}.events</span></h2>
+      <div id="events" class="trace"><div class="empty">Quiet.</div></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const api = (p, o) => fetch(p, o).then(r => r.json().then(b => ({ok: r.ok, status: r.status, body: b})));
+
+$("theme").onclick = () => {
+  const root = document.documentElement;
+  const now = root.getAttribute("data-theme");
+  const next = now === "dark" ? "light" : "dark";
+  root.setAttribute("data-theme", next);
+  try { localStorage.setItem("console-theme", next); } catch (e) {}
+};
+try {
+  const saved = localStorage.getItem("console-theme");
+  if (saved) document.documentElement.setAttribute("data-theme", saved);
+} catch (e) {}
+
+function statusChip(s) {
+  const cls = s === "done" ? "done" : s === "failed" ? "fail" : s === "awaiting_approval" ? "wait" : "";
+  const label = s === "awaiting_approval" ? "awaiting you" : s;
+  return `<span class="chip ${cls}">${label}</span>`;
+}
+
+async function refresh() {
+  const h = await api("/health");
+  $("health").textContent = h.ok ? h.body.status : "unreachable";
+  $("health-dot").style.background = h.ok ? "var(--agent)" : "var(--stop)";
+  $("lag").textContent = "lag " + (h.body.lag ?? 0);
+
+  const runs = (await api("/runs")).body || [];
+  $("run-count").textContent = runs.length;
+  $("runs").innerHTML = runs.length ? runs.map(r => `
+    <div class="card">
+      <div class="row">
+        <code>${r.run_id}</code>${statusChip(r.status)}
+        <span style="flex-grow:1"></span>
+        <span class="muted mono">${r.llm_calls ?? 0} model calls</span>
+      </div>
+      <div class="muted mono" style="margin-top:6px">${(r.visited || []).join(" → ") || "—"}</div>
+      ${r.reason ? `<div class="muted" style="margin-top:6px;color:var(--stop)">${r.reason}</div>` : ""}
+    </div>`).join("") : '<div class="empty">No runs yet.</div>';
+
+  const waiting = (await api("/approvals")).body || [];
+  $("approval-count").textContent = waiting.length;
+  $("approvals").innerHTML = waiting.length ? waiting.map(r => `
+    <div class="card">
+      <div class="row"><code>${r.run_id}</code>
+        <span class="chip wait">paused at ${r.awaiting}</span></div>
+      <div class="muted" style="margin:8px 0">Already cost
+        <strong>${r.llm_calls ?? 0}</strong> model calls. Approving resumes after the
+        pause; nothing is regenerated.</div>
+      <div class="row">
+        <button class="btn" data-approve="${r.run_id}">Approve</button>
+        <button class="btn stop" data-reject="${r.run_id}">Reject</button>
+      </div>
+    </div>`).join("") : '<div class="empty">Nothing paused.</div>';
+
+  const events = (await api("/events")).body || [];
+  $("events").innerHTML = events.length
+    ? events.slice(-20).reverse().map(e =>
+        `<div>${e.topic.split(".").pop()} · <code>${e.key}</code> p${e.partition} @${e.offset} — ${e.event || ""}</div>`
+      ).join("")
+    : '<div class="empty">Quiet.</div>';
+}
+
+document.addEventListener("click", async (ev) => {
+  const a = ev.target.getAttribute && ev.target.getAttribute("data-approve");
+  const r = ev.target.getAttribute && ev.target.getAttribute("data-reject");
+  if (a) { await api(`/approvals/${a}/approve`, {method: "POST"}); refresh(); }
+  if (r) {
+    await api(`/approvals/${r}/reject`, {
+      method: "POST", headers: {"content-type": "application/json"},
+      body: JSON.stringify({reason: "rejected from the console"})
+    });
+    refresh();
+  }
+});
+
+$("drain").onclick = async () => { await api("/drain", {method: "POST"}); refresh(); };
+
+$("intake").onsubmit = async (ev) => {
+  ev.preventDefault();
+  let payload = {};
+  try { payload = JSON.parse($("payload").value || "{}"); }
+  catch (e) { $("intake-note").textContent = "Payload is not valid JSON."; return; }
+  const res = await api("/intake", {
+    method: "POST", headers: {"content-type": "application/json"},
+    body: JSON.stringify({entity: $("entity").value, payload})
+  });
+  $("intake-note").textContent = res.ok
+    ? `Accepted as ${res.body.run_id}. Nothing has touched the model yet.`
+    : `Refused: ${res.body.detail}`;
+  refresh();
+};
+
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

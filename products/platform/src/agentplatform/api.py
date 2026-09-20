@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from . import graphs, topics
+from .web import html as console_html
 
 
 class FastAPINotInstalledError(ImportError):
@@ -144,6 +145,29 @@ class Runtime:
     def awaiting(self) -> list[dict]:
         return [r for r in self.store.rows("runs") if r.get("status") == AWAITING_APPROVAL]
 
+    def runs(self) -> list[dict]:
+        return self.store.rows("runs")
+
+    def recent_events(self, limit: int = 20) -> list[dict]:
+        """The event feed, peeked rather than consumed.
+
+        Reading the console must not steal messages from the projector that is
+        also consuming this topic.
+        """
+        out = []
+        for topic in (self.topics.events, self.topics.approvals, self.topics.dlq):
+            for message in self.bus.tail(topic, limit):
+                out.append({
+                    "topic": message.topic,
+                    "key": message.key,
+                    "partition": message.partition,
+                    "offset": message.offset,
+                    "event": message.value.get("event")
+                             or message.value.get("node")
+                             or message.value.get("error", ""),
+                })
+        return out[-limit:]
+
 
 def create_app(runtime: Runtime):
     """The FastAPI application for one product."""
@@ -155,7 +179,14 @@ def create_app(runtime: Runtime):
             "Install with: uv add fastapi uvicorn"
         ) from exc
 
+    from fastapi.responses import HTMLResponse  # noqa: PLC0415 — optional extra
+
     app = FastAPI(title=runtime.domain)
+
+    @app.get("/", response_class=HTMLResponse)
+    def console() -> str:
+        """The operator console. One page, no build step, no npm."""
+        return console_html(runtime.domain)
 
     @app.get("/health")
     def health() -> dict:
@@ -181,6 +212,23 @@ def create_app(runtime: Runtime):
         if row is None:
             raise HTTPException(status_code=404, detail="no such run")
         return row
+
+    @app.get("/runs")
+    def list_runs() -> list[dict]:
+        return runtime.runs()
+
+    @app.get("/events")
+    def events(limit: int = 20) -> list[dict]:
+        return runtime.recent_events(limit)
+
+    @app.post("/drain")
+    def drain(limit: int = 10) -> dict:
+        """Run one worker pass.
+
+        Exposed so the console can demonstrate the queue without a supervisor
+        process. In a deployment this is a loop in a worker, not a route.
+        """
+        return {"handled": runtime.drain(limit)}
 
     @app.get("/approvals")
     def approvals() -> list[dict]:

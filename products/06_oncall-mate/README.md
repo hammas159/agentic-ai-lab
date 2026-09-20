@@ -2,17 +2,46 @@
 
 > An alert storm collapsed into one incident with a suspect, a runbook and a status update.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
 **Absorbs:** `BUILD-PLAN.md` 11, plus the four queued `incident-copilot` upgrades. Built on the `incident-copilot` core; distinct from it because that is a library and a CLI and this is the product.
 
-## The finding it exists to produce
+## The finding
 
-`log-detective` found that compression destroys the rare line — 655 of ~1,000 distinct
-messages gone, templates-seen-once falling from 908 to 150. The rare line is what an
-incident is made of. Measure suspect accuracy as a function of template compression ratio,
-and find where the two curves cross.
+**Measured on 10,000 real production log lines** — Loghub's published samples from five
+systems, 2,000 lines each, one templater, no tuning per system.
+
+| System | Distinct messages | Templates | Ratio | Messages seen once that stop existing |
+|---|---:|---:|---:|---:|
+| HDFS | 2,000 | 16 | **125.0x** | 1,997 of 2,000 |
+| OpenStack | 2,000 | 50 | 40.0x | 1,995 |
+| HPC | 1,999 | 180 | 11.1x | 1,886 |
+| ZooKeeper | 1,999 | 244 | 8.2x | 1,781 |
+| BGL | 2,000 | 1,840 | **1.09x** | 185 |
+| **All five** | 9,998 | 2,330 | 4.29x | 7,844 |
+
+**The compression ratio spans 115x across systems with the templater held constant.** It is
+a property of the log, not of the templater — so a threshold tuned on one system says
+nothing about the next. Pick "collapse to roughly 200 templates" and you get 16 on HDFS
+(the incident is now invisible) and 1,840 on BGL (nothing was collapsed and the context
+problem is exactly where it started).
+
+**The last column is the one that matters.** An incident is made of the line that appeared
+once. On HDFS, 2,000 messages are seen exactly once and only 3 templates are — 1,997
+singletons stop existing as anything a correlator could point at. `log-detective` found
+this on one corpus; across five it is worse and it is not uniform.
+
+Note what the bottom row does: averaged over all five systems the ratio is 4.29x, which
+looks unremarkable. **The per-system table is the result; the headline number is the thing
+that hides it.**
+
+Reproduce it:
+
+```bash
+cd 06_oncall-mate && python -m pytest tests/test_real_logs.py -q     # 11 passed
+```
 
 ## Agents and write authority
 
@@ -63,6 +92,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 06_oncall-mate
+python -m pytest -q                      # 18 passed
+PYTHONPATH="src;../platform/src" python -m oncall.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not execute a remediation.** It proposes; a person runs it.
@@ -77,5 +134,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `alerts`, `claims`, `issued_receipts`
+
+Published to `ops.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `action.proposed`, `alerts`, `branch_status`, `branches`, `branches_failed`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `executed`, `incidents`, `issued_receipts`, `kept_claims`, `model`, `reduction`, `summary`, `summary_subject` |
+
+**The early exit**, on a payload that trips `no_incident`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

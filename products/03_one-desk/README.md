@@ -2,15 +2,79 @@
 
 > Portfolio, LinkedIn, Instagram and X in one calendar, one inbox and one approval tray.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
-## The finding it exists to produce
+## The finding
 
-Per-platform 'voice adaptation' is the selling point of every tool in this category.
-Measure token overlap between the variants. The likely result is that three of four are
-near-identical past length and hashtags, and that the engagement difference is explained by
-posting time — which is deterministic and needs no model. Publish it either way.
+The claim under test is that per-platform "voice adaptation" produces four genuinely
+different texts. Testing it needs two things: a yardstick for how different real renderings
+of one thing are, and **output from a real adapter**.
+
+**The yardstick.** Each AMI meeting carries up to four participant summaries — the same
+hour, written up separately by each person who was in the room, with no instruction to
+differ. 300 summaries, 80 meetings, 397 same-meeting pairs.
+
+**The adapter.** 12 real source texts through `qwen2.5:14b-instruct` on this machine, asked
+for a LinkedIn post, an Instagram caption, an X post and a portfolio note: 48 generations,
+cached in `data/adapter_runs.json` by `scripts/run_adapter.py`.
+
+| | Median content-word overlap |
+|---|---:|
+| Adapter variant vs **its source** | **0.528** |
+| Adapter variant vs **another variant** | **0.290** |
+| Two people, same meeting | **0.229** |
+| Two people, different meetings | 0.159 |
+
+### The adaptation is real, and this README predicted the opposite
+
+**Four variants of one source differ from each other about as much as two independent
+people rendering the same content differ** — 0.290 against a human baseline of 0.229. They
+are not four copies with different hashtags.
+
+The earlier version of this section predicted near-identical variants and concluded "stop
+paying for four generations". That prediction was made against a hand-written example pair
+rather than a real run, and the real run does not support it. The conclusion is withdrawn.
+
+### What the adapter does cost
+
+Each variant keeps **half its source's content words**, where an independent rendering of
+the same content keeps under a quarter. **The adapter paraphrases where a person
+re-conceives** — 2.3x closer to the source than a human writing from the same material.
+
+Whether that is a fault depends on what you want. For a social surface it is arguably
+correct: the post should still be about the thing. It is worth knowing, and it is the honest
+version of "the model is not really rewriting".
+
+### Where the generations could actually be saved
+
+How much a platform transforms varies twofold, and it tracks the prompt:
+
+| Platform | Overlap with source |
+|---|---:|
+| Instagram | 0.333 |
+| LinkedIn | 0.426 |
+| Portfolio | 0.609 |
+| **X** | **0.682** |
+
+**X and the portfolio note barely leave the source.** Those two are the candidates for a
+deterministic template — truncate, adjust register, done — which would halve the generation
+budget without losing anything a measurement can detect. Instagram and LinkedIn are doing
+real work.
+
+### Still not measured
+
+Engagement by posting time. That needs the account owner's own history, and no substitute
+exists. `domain.best_hour` computes it from real history; there is no real history here, so
+no engagement figure is claimed anywhere in this repository.
+
+Reproduce it:
+
+```bash
+python scripts/run_adapter.py 12     # ~4 min on this card, writes the cache
+cd 03_one-desk && python -m pytest -q     # 34 passed
+```
 
 ## Agents and write authority
 
@@ -61,6 +125,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 03_one-desk
+python -m pytest -q                      # 17 passed
+PYTHONPATH="src;../platform/src" python -m onedesk.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not auto-reply in public.** Drafts only, always.
@@ -75,5 +167,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `baseline`, `claims`, `idea`, `issued_receipts`, `variants`
+
+Published to `social.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `baseline`, `branch_status`, `branches`, `branches_failed`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `idea`, `issued_receipts`, `kept_claims`, `max_overlap`, `model`, `overlaps`, `published`, `scheduled`, `summary`, `summary_subject`, `variants` |
+
+**The early exit**, on a payload that trips `vetoed`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

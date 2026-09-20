@@ -2,15 +2,65 @@
 
 > Machine custodian: on mains loss, checkpoint the training run, pause the downloads, sleep the displays, hibernate before the battery goes.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
-## The finding it exists to produce
+## The findings
 
-Work lost per outage, before and after. The baseline is already on this machine and is not
-theoretical: five dead model pulls and a training run paused at epoch 18 of 30. Count the
-GPU-hours and the transferred bytes destroyed per power event, then count them again with a
-custodian running.
+Measured against this machine's real process table, not a fixture.
+
+### 1 · On a shared machine, the custodian protects nothing — and that is correct
+
+| | |
+|---|---:|
+| Processes running | 392 |
+| Expensive jobs worth protecting | 3 |
+| **Of those, started by another session** | **3** |
+| Actions planned against them on simulated mains loss | **0** |
+
+The three are `ollama app.exe`, `ollama.exe` and `llama-server.exe` — the model server
+holding 9.2 GB of this card. They are precisely what an outage would destroy, and precisely
+what this custodian must not signal. So the plan for a real power cut here is one action:
+sleep the displays. It reports the rest and reaches for none of it.
+
+That is the whole product. A custodian that signals a PID it did not start is worse than no
+custodian.
+
+### 2 · A classifier that reads an install path is reading noise
+
+The first version matched the raw command line and found **14** expensive jobs. Eleven were
+ordinary Python processes, matched because the interpreter lives under
+`...\AppData\Roaming\uv\python\...` and `\buv\b` matches inside a path.
+
+Classifying on the executable's basename plus its arguments takes 14 down to **3**. A
+custodian acting on the first number would have paused eleven unrelated processes during an
+outage.
+
+### 3 · A process name is not an identity — caught by this product's own test
+
+The planner originally named its target: `checkpoint python.exe`. Run under pytest on this
+machine, `jobs()` sees two `python.exe` processes — the test run itself, owned, and another
+session's, not — and the plan produced an instruction that could not be carried out safely.
+**`Action` now carries a `pid`, and refuses to be constructed without one** unless the
+target is not a process at all.
+
+This is the exact class of mistake the product exists to prevent, found by running it
+against real state rather than by imagining it.
+
+### Still owed
+
+Work lost per outage, before and after, is the number this README set out to produce. It
+needs outages, and the honest position is that none have been observed while the custodian
+was watching. The baseline is on record — five dead model pulls and a training run paused at
+epoch 18 — but it was gathered before this existed and is not a measurement this product
+made.
+
+Reproduce it:
+
+```bash
+cd 12_powerguard && python -m pytest tests/test_real_machine.py -q     # 10 passed
+```
 
 ## Agents and write authority
 
@@ -60,6 +110,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 12_powerguard
+python -m pytest -q                      # 20 passed
+PYTHONPATH="src;../platform/src" python -m powerguard.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It never signals a process it did not start.** Other chat sessions train on this box. Unowned jobs at risk are reported to you and left alone. This is enforced in the planner, not in a comment.
@@ -74,5 +152,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `battery_pct`, `claims`, `issued_receipts`, `jobs`, `minutes_remaining`, `on_mains`
+
+Published to `power.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `actions`, `actions_taken`, `battery_pct`, `branch_status`, `branches`, `branches_failed`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `incident_note`, `issued_receipts`, `jobs`, `kept_claims`, `minutes_remaining`, `model`, `on_mains`, `summary`, `summary_subject`, `unowned_at_risk` |
+
+**The early exit**, on a payload that trips `nothing_to_do`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

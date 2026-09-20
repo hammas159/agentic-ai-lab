@@ -1,0 +1,1702 @@
+{
+  "01_revenue-desk": {
+    "domain": "crm",
+    "topics": [
+      "crm.intake",
+      "crm.tasks",
+      "crm.events",
+      "crm.approvals",
+      "crm.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "issued_receipts",
+      "reply",
+      "signals"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "classify",
+        "qualify",
+        "enrich",
+        "synthesise",
+        "draft",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "They are hiring three AI engineers."
+      ],
+      "dropped": [
+        "They are evaluating vendors this quarter."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "classify",
+        "qualify",
+        "enrich",
+        "synthesise",
+        "draft",
+        "gate",
+        "approve",
+        "send"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft.body",
+        "drop_rate",
+        "dropped_claims",
+        "issued_receipts",
+        "iterations",
+        "kept_claims",
+        "lead.score",
+        "lead.stage",
+        "model",
+        "reply",
+        "reply.intent",
+        "sent",
+        "signals",
+        "summary"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "classify",
+        "suppress"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "suppressed": true
+      }
+    }
+  },
+  "02_ward-sync": {
+    "domain": "ward",
+    "topics": [
+      "ward.intake",
+      "ward.tasks",
+      "ward.events",
+      "ward.approvals",
+      "ward.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "encounter",
+      "events",
+      "issued_receipts"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "active_medications",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "encounter",
+        "events",
+        "issued_receipts",
+        "kept_claims",
+        "model",
+        "must_not_mention",
+        "signed",
+        "summary",
+        "summary.draft",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "escalated": true
+      }
+    }
+  },
+  "03_one-desk": {
+    "domain": "social",
+    "topics": [
+      "social.intake",
+      "social.tasks",
+      "social.events",
+      "social.approvals",
+      "social.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "baseline",
+      "claims",
+      "idea",
+      "issued_receipts",
+      "variants"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "baseline",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "idea",
+        "issued_receipts",
+        "kept_claims",
+        "max_overlap",
+        "model",
+        "overlaps",
+        "published",
+        "scheduled",
+        "summary",
+        "summary_subject",
+        "variants"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "vetoed": true
+      }
+    }
+  },
+  "04_ledger-brain": {
+    "domain": "fin",
+    "topics": [
+      "fin.intake",
+      "fin.tasks",
+      "fin.events",
+      "fin.approvals",
+      "fin.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "invoices",
+      "issued_receipts",
+      "payments"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "ambiguous",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "chase.draft",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "invoices",
+        "issued_receipts",
+        "kept_claims",
+        "matched",
+        "model",
+        "payments",
+        "sent",
+        "summary",
+        "summary_subject",
+        "unmatched"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "refused": true
+      }
+    }
+  },
+  "05_comms-desk": {
+    "domain": "comms",
+    "topics": [
+      "comms.intake",
+      "comms.tasks",
+      "comms.events",
+      "comms.approvals",
+      "comms.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "commitments",
+      "issued_receipts"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "clusters",
+        "commitments",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "duplicates",
+        "issued_receipts",
+        "kept_claims",
+        "model",
+        "sent",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "nothing_to_do": true
+      }
+    }
+  },
+  "06_oncall-mate": {
+    "domain": "ops",
+    "topics": [
+      "ops.intake",
+      "ops.tasks",
+      "ops.events",
+      "ops.approvals",
+      "ops.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "alerts",
+      "claims",
+      "issued_receipts"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "action.proposed",
+        "alerts",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "executed",
+        "incidents",
+        "issued_receipts",
+        "kept_claims",
+        "model",
+        "reduction",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "no_incident": true
+      }
+    }
+  },
+  "07_hire-desk": {
+    "domain": "hire",
+    "topics": [
+      "hire.intake",
+      "hire.tasks",
+      "hire.events",
+      "hire.approvals",
+      "hire.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "cv",
+      "issued_receipts",
+      "secrets"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "cv",
+        "decision",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "interview_kit",
+        "issued_receipts",
+        "kept_claims",
+        "leaks",
+        "model",
+        "redacted_view",
+        "removed",
+        "secrets",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "refused_to_score": true
+      }
+    }
+  },
+  "08_bid-desk": {
+    "domain": "bid",
+    "topics": [
+      "bid.intake",
+      "bid.tasks",
+      "bid.events",
+      "bid.approvals",
+      "bid.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "evidenced",
+      "issued_receipts",
+      "requirements",
+      "tender"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "evidenced",
+        "issued_receipts",
+        "kept_claims",
+        "missing_mandatory",
+        "model",
+        "requirements",
+        "section.draft",
+        "submittable",
+        "submitted",
+        "summary",
+        "summary_subject",
+        "tender"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "blocked": true
+      }
+    }
+  },
+  "09_hermes-home": {
+    "domain": "home",
+    "topics": [
+      "home.intake",
+      "home.tasks",
+      "home.events",
+      "home.approvals",
+      "home.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "constraints",
+      "issued_receipts",
+      "message",
+      "specialist"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "carried",
+        "claims",
+        "constraints",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "hard_dropped",
+        "issued_receipts",
+        "kept_claims",
+        "memory_written",
+        "message",
+        "model",
+        "reply",
+        "soft_lost",
+        "specialist",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "handoff_refused": true
+      }
+    }
+  },
+  "10_kyc-floor": {
+    "domain": "kyc",
+    "topics": [
+      "kyc.intake",
+      "kyc.tasks",
+      "kyc.events",
+      "kyc.approvals",
+      "kyc.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "issued_receipts",
+      "listed",
+      "name"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "filed",
+        "hit_count",
+        "hits",
+        "issued_receipts",
+        "kept_claims",
+        "listed",
+        "model",
+        "name",
+        "sar.draft",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "cleared": true
+      }
+    }
+  },
+  "11_watchtower": {
+    "domain": "sec",
+    "topics": [
+      "sec.intake",
+      "sec.tasks",
+      "sec.events",
+      "sec.approvals",
+      "sec.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "advisories",
+      "claims",
+      "host",
+      "issued_receipts",
+      "packages",
+      "scope"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "advisories",
+        "applied",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "host",
+        "issued_receipts",
+        "kept_claims",
+        "model",
+        "out_of_scope",
+        "packages",
+        "remediation.draft",
+        "scope",
+        "summary",
+        "summary_subject",
+        "vulnerable"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "refused": true
+      }
+    }
+  },
+  "12_powerguard": {
+    "domain": "power",
+    "topics": [
+      "power.intake",
+      "power.tasks",
+      "power.events",
+      "power.approvals",
+      "power.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "battery_pct",
+      "claims",
+      "issued_receipts",
+      "jobs",
+      "minutes_remaining",
+      "on_mains"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "actions",
+        "actions_taken",
+        "battery_pct",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "incident_note",
+        "issued_receipts",
+        "jobs",
+        "kept_claims",
+        "minutes_remaining",
+        "model",
+        "on_mains",
+        "summary",
+        "summary_subject",
+        "unowned_at_risk"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "nothing_to_do": true
+      }
+    }
+  },
+  "13_swarm-lab": {
+    "domain": "swarm",
+    "topics": [
+      "swarm.intake",
+      "swarm.tasks",
+      "swarm.events",
+      "swarm.approvals",
+      "swarm.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "calls",
+      "claims",
+      "issued_receipts",
+      "repeats",
+      "writes"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "calls",
+        "claims",
+        "conflicts",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "duplicate_calls",
+        "issued_receipts",
+        "kept_claims",
+        "model",
+        "published",
+        "repeats",
+        "report.draft",
+        "reportable",
+        "summary",
+        "summary_subject",
+        "writes"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "not_reportable": true
+      }
+    }
+  },
+  "14_graph-clinic": {
+    "domain": "graph",
+    "topics": [
+      "graph.intake",
+      "graph.tasks",
+      "graph.events",
+      "graph.approvals",
+      "graph.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "edges",
+      "end",
+      "issued_receipts",
+      "start"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "answer.draft",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "cites",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "edges",
+        "end",
+        "issued_receipts",
+        "kept_claims",
+        "model",
+        "path",
+        "path_sources",
+        "reachable",
+        "start",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "no_path": true
+      }
+    }
+  },
+  "15_claims-floor": {
+    "domain": "claims",
+    "topics": [
+      "claims.intake",
+      "claims.tasks",
+      "claims.events",
+      "claims.approvals",
+      "claims.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "issued_receipts",
+      "loss_date",
+      "peril",
+      "versions"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "coverage_reason",
+        "covered",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "issued_receipts",
+        "kept_claims",
+        "loss_date",
+        "model",
+        "no_version",
+        "paid",
+        "peril",
+        "settlement.draft",
+        "summary",
+        "summary_subject",
+        "version_id",
+        "versions"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "cannot_assess": true
+      }
+    }
+  },
+  "16_shelf-ops": {
+    "domain": "shelf",
+    "topics": [
+      "shelf.intake",
+      "shelf.tasks",
+      "shelf.events",
+      "shelf.approvals",
+      "shelf.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "base",
+      "claims",
+      "cost",
+      "fee_pct",
+      "floor",
+      "issued_receipts",
+      "proposals"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "applied_by",
+        "at_floor",
+        "base",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "cost",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "fee_pct",
+        "floor",
+        "issued_receipts",
+        "kept_claims",
+        "listing.price",
+        "margin",
+        "model",
+        "note",
+        "price",
+        "proposals",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "held_at_floor": true
+      }
+    }
+  },
+  "17_fleet-desk": {
+    "domain": "fleet",
+    "topics": [
+      "fleet.intake",
+      "fleet.tasks",
+      "fleet.events",
+      "fleet.approvals",
+      "fleet.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "challenger_route",
+      "claims",
+      "depot",
+      "issued_receipts",
+      "matrix",
+      "solver_route",
+      "stops"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "challenger_cost",
+        "challenger_route",
+        "claims",
+        "depot",
+        "dispatched",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "eta_minutes",
+        "invalid_route",
+        "issued_receipts",
+        "kept_claims",
+        "matrix",
+        "message.draft",
+        "model",
+        "pct_worse",
+        "solver_cost",
+        "solver_route",
+        "stops",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "rejected_route": true
+      }
+    }
+  },
+  "18_campus-ops": {
+    "domain": "campus",
+    "topics": [
+      "campus.intake",
+      "campus.tasks",
+      "campus.events",
+      "campus.approvals",
+      "campus.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "issued_receipts",
+      "sessions"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "clashes",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "issued_receipts",
+        "kept_claims",
+        "message.draft",
+        "model",
+        "publishable",
+        "published",
+        "sessions",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "not_publishable": true
+      }
+    }
+  },
+  "19_agri-desk": {
+    "domain": "agri",
+    "topics": [
+      "agri.intake",
+      "agri.tasks",
+      "agri.events",
+      "agri.approvals",
+      "agri.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "isolates",
+      "issued_receipts",
+      "since_day"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "advisory.draft",
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "claims",
+        "clusters",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "emerging",
+        "isolates",
+        "issued",
+        "issued_receipts",
+        "kept_claims",
+        "model",
+        "naive_count",
+        "since_day",
+        "summary",
+        "summary_subject"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "no_emergence": true
+      }
+    }
+  },
+  "20_driftwatch": {
+    "domain": "drift",
+    "topics": [
+      "drift.intake",
+      "drift.tasks",
+      "drift.events",
+      "drift.approvals",
+      "drift.dlq"
+    ],
+    "lag_after_intake": 1,
+    "input_keys": [
+      "claims",
+      "facts",
+      "issued_receipts",
+      "readme_claims"
+    ],
+    "paused": {
+      "status": "awaiting_approval",
+      "awaiting": "approve",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve"
+      ],
+      "llm_calls": 2
+    },
+    "gate": {
+      "kept": [
+        "Backed by a real receipt."
+      ],
+      "dropped": [
+        "Asserted with nothing behind it."
+      ],
+      "drop_rate": 0.5
+    },
+    "done": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "gather",
+        "synthesise",
+        "compose",
+        "gate",
+        "approve",
+        "commit"
+      ],
+      "llm_calls": 2,
+      "result_keys": [
+        "branch_status",
+        "branches",
+        "branches_failed",
+        "broken",
+        "claims",
+        "draft",
+        "drop_rate",
+        "dropped_claims",
+        "facts",
+        "issued_receipts",
+        "kept_claims",
+        "merged",
+        "model",
+        "patch.draft",
+        "readme_claims",
+        "summary",
+        "summary_subject",
+        "verifiable_share"
+      ]
+    },
+    "early_exit": {
+      "status": "done",
+      "visited": [
+        "triage",
+        "exit"
+      ],
+      "llm_calls": 0,
+      "flags": {
+        "no_drift": true
+      }
+    }
+  }
+}

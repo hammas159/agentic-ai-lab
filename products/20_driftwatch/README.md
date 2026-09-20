@@ -2,17 +2,58 @@
 
 > Watches a repository for the moment its documentation stops being true, and opens the pull request that fixes it.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
 **Absorbs:** the priority-70 code–doc staleness item from the SWE queue. Distinct from the shipped `docstring-drift`, which measures the phenomenon; this one repairs it continuously.
 
-## The finding it exists to produce
+## The finding
 
-What share of documentation drift is *mechanically verifiable* rather than a matter of
-judgement. `compliance-auditor` already found the most confidently stated house convention
-holds in 9 of 33 repos. Split the claims a README makes into checkable and unfalsifiable,
-and report the ratio — most doc-linting tools assume the first category is all there is.
+**Measured over the 35 real repositories on this machine** — their real READMEs, real
+`pyproject.toml` files and real directory contents.
+
+| | |
+|---|---:|
+| Candidate claims (README sentences) | **4,757** |
+| Claims a machine can adjudicate | **78** (1.64%) |
+| Of those, claims with a fact to check against | 55 (70.5%) |
+| Claims that were checked and are **false** | **5** (9.1% of checked) |
+
+**Fewer than two sentences in a hundred can be settled by a checker.** Doc-linting tools
+are built as though that fraction were most of the file, which is why they produce a wall
+of unfalsifiable findings and get switched off in week two. The other 98.4% is prose: it
+may be wrong, but no tool is going to be the thing that decides.
+
+The five that are false are real drift, found live:
+
+| Repository | Drift |
+|---|---|
+| `agentic-ai-lab` | README says **zero runtime dependencies**; `pyproject.toml` declares 13, including fastapi, redis, aiokafka and langgraph |
+| `classical-computer-vision` | README says **41 projects**; there are **57** |
+| `rag-forge` (x2) | references `RESULTS.md`, which does not exist |
+| `sql-analyst-agent` | references `RESULTS.md`, which does not exist |
+
+The first of those drifted **during this session**: the dependencies were added by other
+work in the same repository while the README kept its old claim. That is exactly the moment
+this product exists to catch, and it was caught by running the tool rather than by
+constructing an example.
+
+Note the middle row too. Almost a third of the mechanically-shaped claims could not be
+checked because no fact answered them — a claim being *checkable in principle* and a
+checker *having the fact* are different things, and conflating them inflates the headline.
+
+Reproduce it:
+
+```bash
+cd 20_driftwatch && python -m pytest tests/test_real_repos.py -q     # 10 passed
+```
+
+### What had to be fixed to get this number
+
+The first extractor treated every sentence as a claim and reported 4,757 findings, nearly
+all of them unfalsifiable adjectives. Classification has to come before verification, or
+the output is noise with five real defects buried in it.
 
 ## Agents and write authority
 
@@ -62,6 +103,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 20_driftwatch
+python -m pytest -q                      # 20 passed
+PYTHONPATH="src;../platform/src" python -m driftwatch.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not merge.** It opens a pull request; a person merges.
@@ -76,5 +145,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `claims`, `facts`, `issued_receipts`, `readme_claims`
+
+Published to `drift.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `branch_status`, `branches`, `branches_failed`, `broken`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `facts`, `issued_receipts`, `kept_claims`, `merged`, `model`, `patch.draft`, `readme_claims`, `summary`, `summary_subject`, `verifiable_share` |
+
+**The early exit**, on a payload that trips `no_drift`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

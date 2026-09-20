@@ -2,17 +2,58 @@
 
 > Clinical evidence assistant over a knowledge graph, where every answer carries the path it came from.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
 **Absorbs:** the priority-68 Medical Graph RAG item from the SWE queue. Brings Neo4j, a database nothing else in the portfolio uses.
 
-## The finding it exists to produce
+## The finding
 
-Graph traversal against plain hybrid retrieval on the same questions. Given `rag-lab`'s
-result — six of eight variants lost to a plain baseline, and HyDE lost to a technique from
-1971 — the honest hypothesis is that this one loses too. Publishing that is worth more than
-another win, and the path provenance is valuable whichever way the accuracy goes.
+**Measured on 3,000 HotpotQA validation questions**, read from the local HuggingFace
+cache. Each has two gold paragraphs hidden among ten, and each is labelled `bridge` (hop
+from one paragraph to another) or `comparison` (read two and compare).
+
+The graph is built from real title mentions: a paragraph titled "Scott Derrickson" that
+names "Ed Wood" in its text is an edge between two entities.
+
+| Question type | n | Graph, 1 hop | Graph, 2 hops | Lexical top-2 |
+|---|---:|---:|---:|---:|
+| **bridge** | 2,400 | **73.4%** | 74.6% | 16.9% |
+| **comparison** | 600 | **0.2%** | 1.3% | 9.5% |
+| All | 3,000 | 58.7% | 60.0% | 15.4% |
+
+**The graph does not beat the baseline or lose to it. It answers a different question.**
+
+On bridge questions it is four times the baseline, because a bridge question *is* a hop and
+a mention edge *is* that hop. On comparison questions it is fifty times worse than the
+baseline, because "were these two directors the same nationality" needs two unrelated pages
+and there is no edge between them — the question is not about a relationship.
+
+The bottom row is the trap. 60% against 15% reads as *the graph wins, use it everywhere*,
+and that would be the wrong call for a fifth of the traffic. **The routing decision, not the
+retriever, is the product.**
+
+Two smaller results worth keeping:
+
+- **The second hop buys almost nothing** — 73.4% to 74.6%. Nearly all the value is in the
+  direct mention, which argues for a hop cap of one and against the unbounded walks this
+  category usually ships.
+- **The median item has two mention edges** among ten paragraphs. The graph is sparse, which
+  is why traversal is cheap when it works at all.
+
+### This contradicts what this README used to predict
+
+The stated prior was that graph traversal would lose, on the strength of `rag-lab`'s result
+that six of eight clever retrieval variants lost to a plain hybrid baseline. On bridge
+questions it wins decisively. The prior was wrong for half the corpus and right for the
+other half, and the useful output is the split rather than either verdict.
+
+Reproduce it:
+
+```bash
+cd 14_graph-clinic && python -m pytest tests/test_real_graph.py -q     # 9 passed
+```
 
 ## Agents and write authority
 
@@ -63,6 +104,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 14_graph-clinic
+python -m pytest -q                      # 17 passed
+PYTHONPATH="src;../platform/src" python -m graphclinic.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not diagnose or advise on treatment.** It retrieves and cites.
@@ -77,5 +146,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `claims`, `edges`, `end`, `issued_receipts`, `start`
+
+Published to `graph.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `answer.draft`, `branch_status`, `branches`, `branches_failed`, `cites`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `edges`, `end`, `issued_receipts`, `kept_claims`, `model`, `path`, `path_sources`, `reachable`, `start`, `summary`, `summary_subject` |
+
+**The early exit**, on a payload that trips `no_path`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

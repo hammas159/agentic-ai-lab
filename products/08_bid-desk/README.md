@@ -2,17 +2,60 @@
 
 > Tender discovery, bid or no-bid, a compliance checklist that cannot be soft-passed, and a proposal drafted from work you won.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
 **Absorbs:** `BUILD-PLAN.md` 20 proposal-forge and 23 market-desk; 25 web-operator becomes the crawler.
 
-## The finding it exists to produce
+## The finding
 
-Mandatory-item recall. A proposal missing one mandatory item is rejected unread, however
-good the prose is. Measure recall on mandatory items specifically, and compare an LLM
-extractor against a regex-plus-rulebook. The asymmetry — one miss is fatal, one false
-positive costs ten minutes — is the whole design argument.
+Public tender portals do not publish machine-readable requirement labels, so the mandatory
+/ optional distinction is measured where it *is* labelled: **published RFCs**. RFC 2119
+defines which words make a requirement binding and states that they count **only in upper
+case** — so `MUST` is an obligation and `must` in the next sentence is prose. That is
+ground truth with no annotation, in documents where missing a mandatory item genuinely
+means rejection.
+
+Across seventeen RFCs:
+
+| | |
+|---|---:|
+| Requirements (RFC 2119, upper case) | 4,036 |
+| Of those, mandatory (`MUST`, `MUST NOT`, `SHALL`, `REQUIRED`) | 2,242 |
+| What a case-insensitive reader finds | 5,750 |
+| **Recall on mandatory items** | **1.000** |
+| **Precision** | **0.827** |
+| **False positives** | **465** |
+
+Measured first on six RFCs and then on seventeen. Precision moved from 0.830 to 0.827 —
+three thousandths across a corpus nearly three times the size, which is the reason to
+believe it rather than the first number.
+
+### This reverses the asymmetry this README predicted
+
+The stated design argument was that *a miss is fatal and a false positive costs ten
+minutes*, so the extractor should be tuned for recall. Measured, **recall is not the
+problem**: upper case is a subset of case-insensitive, so a naive reader cannot miss a
+binding clause. It cannot miss, and it over-reports by twenty per cent.
+
+One flagged obligation in five is not one. A compliance checklist built by reading for the
+word "must" carries 465 phantom requirements, and a bid team works through every one of
+them — costing time, and worse, **over-scoping the bid** against obligations nobody imposed.
+
+So the guard that matters here is the opposite of the one originally designed: the checklist
+must be able to say *this is not a requirement*, and the signal it needs — the capital
+letters — is exactly what a case-insensitive reader throws away.
+
+The general lesson transfers to tenders directly. "Shall provide" in a scope narrative and
+"SHALL provide" in a compliance schedule are different objects, and whatever distinguishes
+them in a given portal's formatting is the thing an extractor must not normalise away.
+
+Reproduce it:
+
+```bash
+cd 08_bid-desk && python -m pytest tests/test_real_requirements.py -q     # 9 passed
+```
 
 ## Agents and write authority
 
@@ -63,6 +106,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 08_bid-desk
+python -m pytest -q                      # 16 passed
+PYTHONPATH="src;../platform/src" python -m biddesk.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not submit.** Submission is a human action, every time.
@@ -77,5 +148,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `claims`, `evidenced`, `issued_receipts`, `requirements`, `tender`
+
+Published to `bid.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `branch_status`, `branches`, `branches_failed`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `evidenced`, `issued_receipts`, `kept_claims`, `missing_mandatory`, `model`, `requirements`, `section.draft`, `submittable`, `submitted`, `summary`, `summary_subject`, `tender` |
+
+**The early exit**, on a payload that trips `blocked`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

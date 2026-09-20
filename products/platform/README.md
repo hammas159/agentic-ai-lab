@@ -7,7 +7,7 @@ database, no model, no framework. FastAPI, LangGraph and ollama are optional ext
 lazy imports.
 
 ```
-PYTHONPATH=src python -m pytest -q      # 96 passed
+python -m pytest -q      # 129 passed, 0 skipped
 ```
 
 ## What is here
@@ -25,6 +25,9 @@ PYTHONPATH=src python -m pytest -q      # 96 passed
 | `llm` | the model interface, a fake, and the cache and budget wrappers | a test must not be able to reach a real model by accident |
 | `graphs` | the graph runtime: five shapes, checkpointed interrupts | two measured findings are enforced, not suggested |
 | `api` | the four things a person does with an agent product | — |
+| `blueprint` | the seven-node shape all twenty products share | writing it twenty times means twenty places for the approval gate to be subtly wrong |
+| `adapters` | Redis, Kafka and Postgres behind the ports | — |
+| `web` | the operator console every product serves at `/` | — |
 
 ## The graph runtime, and LangGraph
 
@@ -97,7 +100,28 @@ starts calling a real model.
 
 ## Input / Output
 
-No results yet — this is the platform, not a product. The number it owes is the measured
-tokens/sec of a 14B on this card, which sets `kv_cache_mb_per_slot` and therefore
-`Gpu.max_slots`. Until that is measured here, the 3000 MB in the tests is a placeholder and
-is labelled as one.
+Measured on this machine, 2026-09-20, Quadro RTX 5000 16 GB, `qwen2.5:14b-instruct` at Q4
+via ollama:
+
+| | |
+|---|---|
+| Generation | **33.7 tok/s** |
+| Prefill | **304.8 tok/s** |
+| Cold load, contended | **683.5 s** — waiting for `qwen2.5-coder:14b` to be evicted, then 9 GB from disk |
+| Reload, second call | **254.3 s** — it had been evicted again in between |
+
+Two things follow, and both are why this package is shaped as it is.
+
+**A 14B↔14B swap costs four to eleven minutes on this box.** Two 14B models do not fit in
+16 GB together — 9.0 GB each — so ollama evicts one to load the other. Coder work and
+instruct work cannot be interleaved; they have to be scheduled apart. `admission.Gpu` says
+`max_slots` from VRAM for exactly this reason, and the model was in fact evicted twice
+during the two measurement calls above.
+
+**A seven-node graph makes two generations.** At 33.7 tok/s a 500-token draft is ~15
+seconds, so one product run is roughly half a minute of GPU time. That is the number the
+bus exists to absorb: the UI accepts work in milliseconds and the card serves it at 33.7
+tok/s whatever the queue looks like.
+
+The `kv_cache_mb_per_slot = 3000` in the admission tests is still a placeholder and is
+labelled as one; deriving it needs a concurrency sweep, which is `swarm-lab`'s job.

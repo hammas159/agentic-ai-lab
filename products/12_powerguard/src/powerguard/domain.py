@@ -18,6 +18,9 @@ SLEEP_DISPLAYS = "sleep-displays"
 HIBERNATE = "hibernate"
 RESUME = "resume"
 
+# Targets that are not processes and therefore carry no pid.
+_NOT_A_PROCESS = frozenset({"displays", "system"})
+
 
 @dataclass(frozen=True)
 class Job:
@@ -56,9 +59,25 @@ class Thresholds:
 
 @dataclass(frozen=True)
 class Action:
+    """One thing to do, and to exactly one process.
+
+    ``pid`` is the identity; ``target`` is only a label for a person reading the
+    log. Identifying a process by name is how a custodian signals the wrong one:
+    on a shared machine two sessions both run ``python.exe``, and "checkpoint
+    python.exe" is an instruction that cannot be carried out safely. This
+    product's own test against the real process table caught that.
+    """
+
     verb: str
     target: str
     reason: str
+    pid: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.pid is None and self.target not in _NOT_A_PROCESS:
+            raise ValueError(
+                f"{self.verb} on {self.target!r} has no pid; a name is not an identity"
+            )
 
 
 # Cheapest to lose, last to be saved.
@@ -83,7 +102,7 @@ def plan(
     t = thresholds or Thresholds()
     if machine.on_mains:
         return [
-            Action(RESUME, j.name, "mains restored, battery above the resume line")
+            Action(RESUME, j.name, "mains restored, battery above the resume line", j.pid)
             for j in jobs
             if j.owned and j.resumable
         ] if machine.battery_pct >= t.resume_above_pct else []
@@ -94,7 +113,7 @@ def plan(
             continue
         if job.kind == TRAINING and job.checkpointable:
             actions.append(
-                Action(CHECKPOINT, job.name, "mains lost; an epoch is expensive")
+                Action(CHECKPOINT, job.name, "mains lost; an epoch is expensive", job.pid)
             )
         elif job.kind == DOWNLOAD:
             actions.append(
@@ -102,6 +121,7 @@ def plan(
                     PAUSE,
                     job.name,
                     "mains lost; a partial transfer resumes, a dead one does not",
+                    job.pid,
                 )
             )
 

@@ -65,3 +65,22 @@ def run(
             continue
         out.kept.append(claim)
     return out
+
+
+def from_state(state: dict, min_sources: int = 1) -> dict:
+    """The gate as a graph node.
+
+    Reads ``claims`` and ``issued_receipts`` from the state and writes back what
+    survived, what did not and why. Identical in all twenty products, because
+    "a claim needs a receipt" is not a per-domain decision.
+    """
+    claims = [
+        Claim(c["text"], tuple(c.get("receipts", ())))
+        for c in state.get("claims", [])
+    ]
+    result = run(claims, set(state.get("issued_receipts", ())), min_sources=min_sources)
+    return {
+        "kept_claims": [c.text for c in result.kept],
+        "dropped_claims": [(d.claim.text, d.reason) for d in result.dropped],
+        "drop_rate": round(result.drop_rate, 4),
+    }

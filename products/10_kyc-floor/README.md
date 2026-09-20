@@ -2,18 +2,56 @@
 
 > Customer onboarding, sanctions and PEP screening, and triage of the alerts screening produces.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
 **Absorbs:** `BUILD-PLAN.md` 24 urdu-desk, which becomes the name-matching engine rather than a standalone project.
 
-## The finding it exists to produce
+## The finding
 
-`urdu-nlp-toolkit`'s finding promoted to a regulatory setting: the same name has several
-byte encodings that render identically, and several defensible transliterations. Measure
-**alias recall** on the sanctions lists — deterministic normalised matching against an LLM
-asked 'are these the same person' — and publish the recall *and* the false-positive load at
-the same threshold. A miss is a fine; a false-positive flood is an unstaffable queue.
+**Measured on OFAC's published sanctions list** — 19,393 entities, 7,535 individuals, and
+**8,650 (primary name, alias) pairs that OFAC itself says are one party.** That is a
+name-matching benchmark with real labels, on exactly the Arabic- and Urdu-origin names this
+product exists for, requiring no annotation.
+
+| Matcher | Recall, all pairs | Recall, matchable pairs | False positives | Alerts per screened name |
+|---|---:|---:|---:|---:|
+| Exact folded tokens | 27.8% | 33.4% | 0.005% | 1.0 |
+| **+ consonant skeletons** | **44.9%** | **53.2%** | **0.005%** | **1.1** |
+| ≥2 name parts in common | 62.6% | 73.7% | 0.055% | 6.0 |
+| ≥1 name part in common | 87.5% | 99.7% | 1.74% | **148.6** |
+
+**Folding consonant skeletons buys 19.8 points of recall and costs nothing.** Arabic script
+does not write short vowels, so `zomor` / `zumar` / `zumur` / `zamur` are one name spelled
+four ways by four transliterators; the false-positive rate does not move at all (1 hit in
+20,000 random different-entity pairs, before and after).
+
+**Past that, every point of recall is bought with precision, and the last stretch is
+ruinous.** Loosening to "one name part in common" reaches 99.7% recall on matchable
+aliases — and produces **148 alerts per screened name, worst case 855** against a
+7,535-name list. A miss is a fine; that queue is unstaffable. The operational number, not
+the recall number, is what picks the threshold.
+
+**1,461 of the 8,650 pairs (16.9%) share no name part at all** — `ABBAS, Abu` and
+`ZAYDAN, Muhammad` are one man. No spelling rule links a nom de guerre to a birth name, so
+that fraction is a ceiling on string matching rather than a defect, and it is why the
+"recall, all pairs" column can never reach 1.0.
+
+Reproduce it:
+
+```bash
+cd 10_kyc-floor && python -m pytest tests/test_real_sanctions.py -q     # 12 passed
+```
+
+### Two things that had to be fixed to get here
+
+**Titles were being treated as name parts.** `AL ZAWAHIRI, Dr. Ayman` and
+`AL-ZAWAHIRI, Ayman Muhammad Rabi` failed to match on `dr` alone.
+
+**Subset matching is the wrong rule when both sides carry extra parts.** Requiring every
+token of one name to appear in the other fails the moment each spelling adds something the
+other lacks — which is the normal case on a sanctions list, not the exception.
 
 ## Agents and write authority
 
@@ -64,6 +102,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 10_kyc-floor
+python -m pytest -q                      # 18 passed
+PYTHONPATH="src;../platform/src" python -m kycfloor.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not onboard a customer.** It screens and triages; a human approves.
@@ -79,5 +145,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `claims`, `issued_receipts`, `listed`, `name`
+
+Published to `kyc.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `branch_status`, `branches`, `branches_failed`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `filed`, `hit_count`, `hits`, `issued_receipts`, `kept_claims`, `listed`, `model`, `name`, `sar.draft`, `summary`, `summary_subject` |
+
+**The early exit**, on a payload that trips `cleared`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

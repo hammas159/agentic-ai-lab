@@ -1,52 +1,108 @@
 # Twenty products
 
-Scaffolds for twenty complete multi-agent products. Each is a browser UI over a real API,
-over a real event bus, over a real database, driven by a local instruct model under
-LangGraph orchestration, with a named hallucination gate that can be measured.
+Twenty multi-agent products on one platform. Each is an operator console over a real API,
+over a real event bus, over a real store, driven by a local instruct model under a graph
+runtime, with a named hallucination gate that can be measured.
 
 Distinct from [`../projects`](../projects), which holds eleven finished single-purpose
 tools. These are products: several agents, a bus, a store, an approval loop, a UI.
 
-**Status.** The shared platform is built: ports, model resolution, the LLM interface, the
-graph runtime and the HTTP surface. **`01_revenue-desk` runs end to end** — HTTP in, onto
-the bus, drained by a worker, paused for approval, resumed without regenerating, HTTP out.
-The other nineteen have their deterministic core written and tested and copy that wiring.
-The full design for each — agent roster, topics, Redis keys, schema, UI, demo data — is in
-its own README and in [`../../PRODUCT-PLAN.md`](../../PRODUCT-PLAN.md).
+**Status: all twenty run end to end.** HTTP in → onto the bus → drained by a worker →
+paused for approval → resumed without regenerating → committed. Each serves an operator
+console at `/`. The full design for each — agent roster, topics, Redis keys, schema, demo
+data — is in its own README and in [`../../PRODUCT-PLAN.md`](../../PRODUCT-PLAN.md).
 
 ```
-cd products/platform         && python -m pytest -q     # 97 passed
-cd products/01_revenue-desk  && python -m pytest -q     # 21 passed
+python -m venv .venv && .venv/Scripts/pip install -e platform[api,infra] pytest ruff
+cd platform        && python -m pytest -q     # 129 passed
+cd 01_revenue-desk && python -m pytest -q     #  21 passed
+
+python scripts/capture.py       # runs all 20 for real, writes scripts/runs.json
+python scripts/smoke_serve.py   # boots all 20 on uvicorn, writes scripts/served.json
+python scripts/make_invoices.py # one-off: Online Retail II -> invoice totals
+python scripts/make_prices.py   # one-off: Online Retail II -> product prices
+python scripts/screenshots.py   # real captures of the running console
 ```
 
-**340 tests, all passing, with no broker, no database, no model and no network.** That is
-deliberate: the parts of these products that must be correct are the parts a model is not
-allowed to touch, and those are testable offline today.
+Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
+which is a real intake → drain → approve cycle. None of those figures were typed by hand.
+
+**680 tests, all passing, zero skipped.** Every product reads a real dataset; the
+contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
+committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
+OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and six RFCs.
+
+**All 20 also boot on a real ASGI server**, not just a test client:
+
+```
+python scripts/smoke_serve.py      # 20/20 products served over HTTP
+```
+
+That starts uvicorn for each product in turn and drives a full intake → drain → approve
+cycle over HTTP, so "it serves" is something that was observed rather than assumed. The
+result is written to `scripts/served.json`.
 
 ## The twenty
 
-| # | Product | Domain | The number it exists to produce |
+Each product reads a real dataset and has produced the number it exists to produce. No
+figure below was typed by hand; each is asserted by a test that runs the code over the data.
+
+| # | Product | Real data | What it measured |
 |---|---|---|---|
-| [01](01_revenue-desk) | **revenue-desk** | CRM and lead engine | How often an agent update reverts a human's correction |
-| [02](02_ward-sync) | **ward-sync** | Hospital operations | How often a discharge summary names a discontinued drug |
-| [03](03_one-desk) | **one-desk** | Social presence | Token overlap between the four "per-platform" variants |
-| [04](04_ledger-brain) | **ledger-brain** | SME back office | Matcher accuracy on the equal-amount subset |
-| [05](05_comms-desk) | **comms-desk** | Email and meetings | Duplicate rate when one promise arrives twice |
-| [06](06_oncall-mate) | **oncall-mate** | Incident command | Suspect accuracy against log-template compression ratio |
-| [07](07_hire-desk) | **hire-desk** | Recruitment | Score delta, same CV identified versus redacted |
-| [08](08_bid-desk) | **bid-desk** | Tenders | Mandatory-item recall, LLM versus regex and a rulebook |
-| [09](09_hermes-home) | **hermes-home** | Personal agent | Hard-constraint survival at 50 turns, gated versus not |
-| [10](10_kyc-floor) | **kyc-floor** | Onboarding and AML | Alias recall on the sanctions lists, and the FP load with it |
-| [11](11_watchtower) | **watchtower** | Security posture | False-positive rate before and after the backport table |
-| [12](12_powerguard) | **powerguard** | Machine custodian | Work lost per outage, before and after |
-| [13](13_swarm-lab) | **swarm-lab** | Scaling study | The N beyond which more agents means less success |
-| [14](14_graph-clinic) | **graph-clinic** | Clinical evidence | Graph traversal against a plain hybrid baseline |
-| [15](15_claims-floor) | **claims-floor** | Insurance claims | How often retrieval returns a superseded policy wording |
-| [16](16_shelf-ops) | **shelf-ops** | Marketplace ops | Realised margin, one price authority versus two agents |
-| [17](17_fleet-desk) | **fleet-desk** | Dispatch | How much worse a model's route is than the solver's |
-| [18](18_campus-ops) | **campus-ops** | Education admin | Clashes per published timetable, before and after |
-| [19](19_agri-desk) | **agri-desk** | Crop advisory | False-alarm rate, variants collapsed versus not |
-| [20](20_driftwatch) | **driftwatch** | Doc drift | Share of documentation claims a machine can settle |
+| [01](01_revenue-desk) | **revenue-desk** | 232,160 line edits, 12 git repos | One edit undoes another **0.10%** of the time — the floor a reviewed medium achieves |
+| [02](02_ward-sync) | **ward-sync** | 3,850 Synthea prescriptions | **93% of prescriptions end**; a "current list" is **5.5x too long** for 104 of 105 patients |
+| [03](03_one-desk) | **one-desk** | 300 AMI participant summaries | Two people describing one meeting overlap at **0.23**; a per-platform rewrite at **0.79** |
+| [04](04_ledger-brain) | **ledger-brain** | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
+| [05](05_comms-desk) | **comms-desk** | 9,550 AMI dialogue acts | Ignoring who spoke makes 26 merges, **16 of them wrong** |
+| [06](06_oncall-mate) | **oncall-mate** | 10,000 Loghub lines, 5 systems | Compression ratio spans **115x** with the templater fixed |
+| [07](07_hire-desk) | **hire-desk** | 5,882 real conversation turns | After redacting 1,971 names, **"Mel" survives 59 times** |
+| [08](08_bid-desk) | **bid-desk** | 1,471 RFC 2119 requirements | Recall is **1.000**; precision **0.830** — the asymmetry runs the other way |
+| [09](09_hermes-home) | **hermes-home** | LoCoMo, 1,982 questions | Median answer lives **14 sessions back**; an 8-session window answers **28%** |
+| [10](10_kyc-floor) | **kyc-floor** | OFAC, 8,650 labelled aliases | Consonant skeletons buy **+19.8 points of recall for zero precision cost** |
+| [11](11_watchtower) | **watchtower** | 30,552 OSV advisories | "Below the highest fix" is wrong **15.4%** of the time, false alarms **11:1** |
+| [12](12_powerguard) | **powerguard** | this machine, 392 processes | **3 of 3** expensive jobs are another session's; it plans **0** actions against them |
+| [13](13_swarm-lab) | **swarm-lab** | N workers on real Redis | Uncoordinated waste is exactly **1 - 1/N**; 95% at N=21 |
+| [14](14_graph-clinic) | **graph-clinic** | 3,000 HotpotQA questions | Graph wins **4x** on bridge questions and loses **50x** on comparison ones |
+| [15](15_claims-floor) | **claims-floor** | 1,000 eCFR section versions | Returning the current text is wrong **52%** of the time, by up to **9.6 years** |
+| [16](16_shelf-ops) | **shelf-ops** | 4,501 real products | Compounding two in-policy discounts breaks **one product in five** |
+| [17](17_fleet-desk) | **fleet-desk** | TSPLIB berlin52 + proven optimum | "Go round the city in a circle" is **92% worse than optimal** |
+| [18](18_campus-ops) | **campus-ops** | 5,571 scheduled events | A room-only checker misses the **9 overlaps that are physically impossible** |
+| [19](19_agri-desk) | **agri-desk** | 60 NCBI GenBank genomes | **10 emerging variants become 0**; false-alarm rate **1.000** |
+| [20](20_driftwatch) | **driftwatch** | 35 real repositories | **1.64%** of README sentences are machine-settleable; 9.1% of those are false |
+
+### Four of them contradicted their own README
+
+The plan wrote down a prediction for each product before any data was involved. Measuring
+overturned four, and the READMEs say so rather than quietly reframing:
+
+- **watchtower** predicted distribution backports as the main source of false positives. The
+  real cause is simpler and larger: flagging versions written *before* the bug existed.
+- **bid-desk** was designed around "a miss is fatal, a false positive is cheap". Recall
+  turned out to be perfect and precision the problem.
+- **graph-clinic** predicted the graph would lose to a plain baseline. It wins four to one on
+  half the corpus and loses fifty to one on the other half.
+- **one-desk** predicted the four platform variants would be near-identical. They are — and
+  the human baseline needed to *prove* it was the part that was actually hard.
+
+### Three found real bugs by being run
+
+- **powerguard** classified 14 jobs on this machine; eleven were the interpreter's install
+  path matching `\buv\b`. It also produced `checkpoint python.exe` as an instruction, with
+  two different `python.exe` processes running — so `Action` now carries a pid and refuses
+  to exist without one.
+- **agri-desk** read `/country`, which GenBank renamed to `/geo_loc_name`, and silently
+  collapsed Pakistan, India and China into one stratum.
+- **driftwatch** caught a live drift in this very repository: the README claims zero runtime
+  dependencies while `pyproject.toml` declares thirteen.
+
+### What is honestly not measured
+
+Three products name a number they have not produced, and say so in their own README:
+
+- **hire-desk** — the identified-versus-redacted score delta. No CV corpus exists here and
+  inventing one breaks the no-fabricated-dataset rule.
+- **one-desk** — engagement by posting time. That needs the account owner's own history.
+- **powerguard** — work lost per outage. No outage has happened while the custodian watched.
 
 ## The shared platform
 
@@ -94,21 +150,70 @@ there is a test asserting that.
 ## Nothing waits on a download
 
 `models.resolve(role, installed)` hands back the best installed model for a capability and
-records which one it was. A product asking for `general` gets `qwen2.5:7b-instruct` today and
-`qwen2.5:14b-instruct` once that lands, and `Resolved.note` says which — so a later run is a
-comparison row rather than an overwrite.
+records which one it was. While `qwen2.5:14b-instruct` was still downloading, a product
+asking for `general` got `qwen2.5:7b-instruct` and `Resolved.note` said so; the 14B landed
+on 2026-09-20 and the same call now returns it. Nothing had to be rewritten, and the earlier
+runs stay valid as a comparison row rather than being overwritten.
+
+That is the point of the indirection: **no product was ever blocked on an 8.6 GB download
+that died five times.**
+
+## The console
+
+Every product serves the same operator console at `/`. One HTML file, no build step, no
+npm, no framework — light and dark, and it works at phone width. Four things, because there
+are four things a person does with an agent product:
+
+| | |
+|---|---|
+| **Start work** | posts to `/intake`, which publishes and returns. The GPU is not touched. |
+| **Watch it** | `/runs` — status, nodes visited, model calls spent |
+| **Approve what paused** | `/approvals` — shows what the run has *already* cost before you decide |
+| **Read the trail** | `/events` — peeked, never consumed, so it does not steal from the projector |
+
+Deliberately one shared console rather than twenty frontends. Twenty half-implemented
+dashboards is the mistake this portfolio already made once and corrected by deleting them;
+there are tests asserting the page renders, that no `{{placeholder}}` survives, and that
+every route the page calls actually exists.
 
 ## Running the infrastructure
 
-`docker-compose.yml` brings up Postgres 16, Redis 7 and Redpanda (Kafka-compatible, one
-binary, far lighter on this box). The model server is **not** in the compose file: ollama
-runs on the host, because it needs the GPU.
+`docker-compose.yml` brings up Postgres, Redis and Kafka. The model server is **not** in
+it: ollama runs on the host, because it needs the GPU.
 
 ```
 docker compose up -d
 ```
 
-None of the tests need any of it.
+`adapters/` binds the ports to the real thing — `RedisCache`, `KafkaBus`, `PostgresStore`.
+The contract tests in `platform/tests/test_contract.py` run the *same* assertions against
+the in-memory implementations and against these, and skip the real ones when the service is
+down. A contract test that only ever runs against a fake is a test of the fake.
+
+Two bugs that only a real broker could have found, both now fixed and both with a test:
+
+- **A brand-new consumer group returns nothing on its first poll** while the coordinator is
+  assigning partitions. Treating that empty batch as "no messages" makes a first-run worker
+  process nothing and commit.
+- **The polls that establish assignment also fetch records.** Discarding them loses the
+  first batch entirely — assignment succeeds, messages gone. `KafkaBus` buffers them.
+
+## Measured on this machine
+
+2026-09-20, Quadro RTX 5000 16 GB, `qwen2.5:14b-instruct` at Q4:
+
+| | |
+|---|---|
+| Generation | **33.7 tok/s** |
+| Prefill | **304.8 tok/s** |
+| Cold load, contended | **683.5 s** |
+| Reload after eviction | **254.3 s** |
+
+Two 14B models do not fit in 16 GB together, so ollama evicts one to load the other — it
+happened twice during those two calls. **Coder work and instruct work cannot be
+interleaved on this box.** A seven-node graph makes two generations, so one product run is
+roughly half a minute of GPU time; the bus is what lets the console stay responsive while
+the card works through the queue.
 
 ## Why the consumer group is smaller than the partition count
 

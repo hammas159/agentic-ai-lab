@@ -13,6 +13,23 @@ from dataclasses import dataclass
 
 PARTICLES = frozenset({"al", "el", "bin", "ibn", "bint", "abu", "ab", "ul", "ud", "uz", "us"})
 
+# Honorifics and ranks. A title is not a name part, and leaving one in breaks
+# subset matching for everyone who happens to carry it: "AL ZAWAHIRI, Dr. Ayman"
+# and "AL-ZAWAHIRI, Ayman Muhammad Rabi" fail to match on `dr` alone.
+TITLES = frozenset({
+    "dr", "mr", "mrs", "ms", "miss", "prof", "professor", "sir", "shaykh", "sheikh",
+    "shaikh", "hajji", "haji", "hajj", "mullah", "maulana", "imam", "sayyid", "sayed",
+    "engineer", "eng", "general", "gen", "colonel", "col", "major", "maj", "captain",
+    "capt", "lieutenant", "lt", "brigadier", "brig", "commander", "cmdr", "admiral",
+    "minister", "president", "chairman", "the", "alias",
+})
+
+# Arabic script does not write short vowels, so the vowels in a transliteration
+# are the transliterator's choice rather than the name. Comparing consonant
+# skeletons is what lets zomor / zumar / zumur / zamur be one name, which is what
+# they are.
+_VOWELS = frozenset("aeiou")
+
 # Transliteration conventions that reach a list for one underlying name.
 EQUIVALENTS: tuple[tuple[str, str], ...] = (
     ("mohammad", "muhammad"),
@@ -79,20 +96,63 @@ def normalise(name: str) -> tuple[str, ...]:
     decomposed = unicodedata.normalize("NFKD", name)
     stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
     cleaned = _NON_LETTER.sub(" ", stripped.lower().replace("-", " "))
-    tokens = [t for t in _SPACES.split(cleaned) if t and t not in PARTICLES]
+    tokens = [
+        t for t in _SPACES.split(cleaned)
+        if t and t not in PARTICLES and t not in TITLES
+    ]
     return tuple(sorted({_drop_leading_particle(fold(t)) for t in tokens if t}))
 
 
-def same_person(a: str, b: str) -> bool:
-    """True when two spellings normalise to the same set of name parts.
+def skeleton(token: str) -> str:
+    """The consonant skeleton of a folded token.
 
-    A subset counts — lists routinely hold a two-part name for someone recorded
-    elsewhere with three — but never below ``MIN_TOKENS``, or every Ahmed on
-    earth matches every other.
+    ``zomor`` -> ``zmr``; ``havatmeh`` -> ``hvtmh``; ``jabril`` -> ``jbrl``. A
+    leading vowel is kept, because dropping it merges names that differ at the
+    start, where Arabic transliteration is most stable.
     """
+    if not token:
+        return token
+    head = token[0]
+    return head + "".join(c for c in token[1:] if c not in _VOWELS)
+
+
+STRICT = "strict"
+SKELETON = "skeleton"
+RELAXED = "relaxed"
+MODES = (STRICT, SKELETON, RELAXED)
+
+
+def same_person(a: str, b: str, mode: str = SKELETON, min_shared: int = 2) -> bool:
+    """Whether two spellings name the same party.
+
+    Three modes, because the right answer depends on what a miss costs:
+
+    ``strict``   exact folded tokens, subset either way. Highest precision.
+    ``skeleton`` the same, on consonant skeletons. Absorbs transliteration vowels.
+    ``relaxed``  skeletons, and ``min_shared`` parts in common is enough — no
+                 subset required, so two names that each carry extra parts can
+                 still match.
+
+    Screening wants recall: a miss is a fine, a false positive costs an analyst a
+    minute. ``skeleton`` is the default because it raises recall a long way at
+    almost no cost in precision; ``relaxed`` is the setting to reach for when the
+    queue can absorb it.
+    """
+    if mode not in MODES:
+        raise ValueError(f"{mode!r} is not one of {MODES}")
+    if min_shared < 1:
+        raise ValueError("min_shared must be at least 1")
+
     na, nb = set(normalise(a)), set(normalise(b))
+    if mode is not STRICT and mode != STRICT:
+        na = {skeleton(t) for t in na}
+        nb = {skeleton(t) for t in nb}
+
     if len(na) < MIN_TOKENS or len(nb) < MIN_TOKENS:
         return na == nb and len(na) >= MIN_TOKENS
+
+    if mode == RELAXED:
+        return len(na & nb) >= min_shared
     return na <= nb or nb <= na
 
 
@@ -102,9 +162,11 @@ class Hit:
     matched_on: tuple[str, ...]
 
 
-def screen(name: str, listed: list[str]) -> list[Hit]:
+def screen(name: str, listed: list[str], mode: str = SKELETON) -> list[Hit]:
     """Every list entry this name could be. Recall first; a human sifts."""
-    return [Hit(entry, normalise(entry)) for entry in listed if same_person(name, entry)]
+    return [
+        Hit(entry, normalise(entry)) for entry in listed if same_person(name, entry, mode)
+    ]
 
 
 def alias_recall(found: set[str], truth: set[str]) -> float:

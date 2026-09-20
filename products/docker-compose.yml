@@ -39,31 +39,33 @@ services:
       timeout: 3s
       retries: 10
 
-  redpanda:
-    # Kafka-compatible, single binary, no ZooKeeper and no JVM. On a 16 GB box
-    # shared with a model, that difference is the whole reason it is here.
-    image: redpandadata/redpanda:v24.2.7
-    command:
-      - redpanda
-      - start
-      - --smp=1
-      - --memory=1G
-      - --overprovisioned
-      - --node-id=0
-      - --check=false
-      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
-      - --advertise-kafka-addr=PLAINTEXT://localhost:9092
+  kafka:
+    # KRaft mode: no ZooKeeper. This is the image the contract tests were
+    # actually run against on this machine, which is why it is this one rather
+    # than the lighter alternative the plan originally named.
+    image: apache/kafka:3.9.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     ports:
       - "9092:9092"
-      - "9644:9644"
     volumes:
-      - rpdata:/var/lib/redpanda/data
+      - kafkadata:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
       interval: 10s
-      timeout: 5s
+      timeout: 8s
       retries: 12
 
 volumes:
   pgdata:
-  rpdata:
+  kafkadata:

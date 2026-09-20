@@ -29,6 +29,7 @@ class Bus(Protocol):
     def publish(self, topic: str, key: str, value: dict) -> Message: ...
     def poll(self, topic: str, group: str, limit: int = 10) -> list[Message]: ...
     def commit(self, topic: str, group: str, offsets: dict) -> None: ...
+    def tail(self, topic: str, limit: int = 20) -> list[Message]: ...
 
 
 class Store(Protocol):
@@ -78,6 +79,19 @@ class InMemoryBus:
         """Replay from the beginning. The reason the events topic is the audit log."""
         for key in [k for k in self._offsets if k[0] == topic and k[1] == group]:
             self._offsets[key] = 0
+
+    def tail(self, topic: str, limit: int = 20) -> list[Message]:
+        """The most recent messages, without consuming them.
+
+        The console reads the event feed; it must not steal messages from the
+        projector that is also reading it.
+        """
+        out: list[Message] = []
+        for (t, _partition), log in sorted(self._log.items()):
+            if t == topic:
+                out.extend(log)
+        out.sort(key=lambda m: (m.partition, m.offset))
+        return out[-limit:]
 
     def lag(self, topic: str, group: str) -> int:
         total = 0

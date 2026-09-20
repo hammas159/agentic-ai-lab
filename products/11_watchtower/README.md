@@ -2,15 +2,59 @@
 
 > Vulnerability, exposure and configuration-drift agent for the machines you are authorised to scan.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
-## The finding it exists to produce
+## The finding
 
-Version-string CVE matching is mostly false positives, because distributions backport a
-fix without bumping the upstream version. Measure the false-positive rate on a real host,
-then again once the backport table is consulted. The gap is the entire value of the
-product, and it is the reason a raw scanner output is ignored after week two.
+**Measured over OSV's published PyPI export** — 30,552 real advisories across 13,587
+packages, each carrying the version ranges it applies to. Every advisory was judged at
+every boundary version known for its package: **2,148,036 verdicts.**
+
+| | | |
+|---|---:|---|
+| Shortcut and interval logic agree | 1,816,839 | 84.6% |
+| **False positive** | **304,840** | **14.2%** — flags a version written before the bug |
+| False negative | 26,357 | 1.2% — clears a version after the last fix |
+
+**The shortcut is wrong once every six or seven verdicts, and it errs towards false alarms
+eleven to one.**
+
+The shortcut is "anything below the highest fixed version is vulnerable", which is what a
+scanner does when it reads `fixed_in` and ignores the rest of the advisory. An advisory does
+not say *fixed in X*; it says *introduced at A, fixed at B*, sometimes several times over.
+
+A real case, `open-webui` / `GHSA-2724-6cpj-gf3v`, affected range `0.10.0` to `0.11.1`:
+
+- version `0.6.19` is below `0.11.1`, so the shortcut calls it vulnerable
+- the vulnerability was introduced in `0.10.0`
+- **the bug had not been written yet**
+
+The false negative is the mirror image and matters more per instance: a package with two
+maintained branches, broken again at `2.0` after being fixed at `1.2`, sits *above* the
+highest fixed version and gets cleared.
+
+### This contradicts what this README used to predict
+
+The stated hypothesis was distribution backports — a fix applied without bumping the
+upstream version. That effect is real and `assess()` still handles it, but it is **not** the
+dominant cause. Measuring found something simpler and larger: most spurious flags are
+versions that predate the vulnerability entirely. The hypothesis was wrong and this section
+says so rather than quietly reframing.
+
+### An honest negative, on the machine that matters
+
+Scanning this environment's 32 installed packages found 14 carrying advisories and 17
+genuine findings — and the shortcut and interval logic **agreed on all 17**. A small,
+current environment rarely holds a version old enough to sit before an introduction point.
+The 14.2% is a property of the advisory population, not a promise about your laptop.
+
+Reproduce it:
+
+```bash
+cd 11_watchtower && python -m pytest tests/test_real_osv.py -q     # 10 passed, ~36s
+```
 
 ## Agents and write authority
 
@@ -60,6 +104,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 11_watchtower
+python -m pytest -q                      # 19 passed
+PYTHONPATH="src;../platform/src" python -m watchtower.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not scan anything outside its scope file.** Out-of-scope targets are refused, not warned about.
@@ -75,5 +147,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `advisories`, `claims`, `host`, `issued_receipts`, `packages`, `scope`
+
+Published to `sec.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `advisories`, `applied`, `branch_status`, `branches`, `branches_failed`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `host`, `issued_receipts`, `kept_claims`, `model`, `out_of_scope`, `packages`, `remediation.draft`, `scope`, `summary`, `summary_subject`, `vulnerable` |
+
+**The early exit**, on a payload that trips `refused`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

@@ -2,17 +2,54 @@
 
 > SME back office: invoices in, bank statements in, reconciliation, inventory and cash flow out.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
 **Absorbs:** the 'never let a model do arithmetic on money' lever from `BUILD-PLAN.md` 12 cloud-janitor.
 
-## The finding it exists to produce
+## The finding
 
-Equal amounts. When two open invoices are for the same value, a fuzzy or LLM matcher picks
-one and is right half the time, silently. Measure matcher accuracy on the equal-amount
-subset specifically — it will sit far below the headline number, and that subset is where
-all the damage is.
+**Measured on 54,716 real invoices** from UCI's Online Retail II, reduced once to invoice
+totals by `scripts/make_invoices.py`.
+
+Restricted to receivables — positive totals, the invoices someone is expected to pay:
+
+| | |
+|---|---:|
+| Invoices | 40,912 |
+| **Sharing their exact amount with another invoice** | **20,817 (50.9%)** |
+| Distinct amounts that collide | 7,006 |
+| Largest collision | **126 invoices at £15.00** |
+| Accuracy of an amount-only matcher **on the colliding half** | **33.7%** |
+| Headline accuracy across the whole population | 66.3% |
+
+**Half of real invoices cannot be identified by their amount.** This is not a tail or an
+edge case; it is half the book.
+
+The two accuracy figures are the point. 66% looks like a matcher that mostly works and
+needs a little polish. It is the average of *always right on the unique half* and *wrong
+two times in three on the other half* — and only the second half does any damage, because
+a wrong match moves real money against the wrong customer's account. Splitting the metric
+by the equal-amount subset is what makes the problem visible; the headline is what hides it.
+
+So the matcher refuses. Two open invoices at the same amount produce an `ambiguous` result
+and a question, never a choice.
+
+### An artefact worth naming
+
+**5,372 invoices total exactly £0.00** — cancellations whose line items net out. Every one
+collides with every other, which pushes the all-invoice collision rate to 59.9%. Leaving
+them in would have made the finding look stronger and would have been wrong: they are a
+different reconciliation problem. The receivables-only figure is the one quoted above, and
+both are in the tests.
+
+Reproduce it:
+
+```bash
+python scripts/make_invoices.py                                       # once, needs openpyxl
+cd 04_ledger-brain && python -m pytest tests/test_real_invoices.py -q  # 10 passed
+```
 
 ## Agents and write authority
 
@@ -63,6 +100,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 04_ledger-brain
+python -m pytest -q                      # 17 passed
+PYTHONPATH="src;../platform/src" python -m ledger.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not post a journal entry on its own.** Every posting is a human action.
@@ -77,5 +142,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `claims`, `invoices`, `issued_receipts`, `payments`
+
+Published to `fin.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `ambiguous`, `branch_status`, `branches`, `branches_failed`, `chase.draft`, `claims`, `draft`, `drop_rate`, `dropped_claims`, `invoices`, `issued_receipts`, `kept_claims`, `matched`, `model`, `payments`, `sent`, `summary`, `summary_subject`, `unmatched` |
+
+**The early exit**, on a payload that trips `refused`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

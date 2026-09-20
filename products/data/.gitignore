@@ -1,0 +1,17 @@
+# Large source archives are fetched, not committed. `scripts/fetch_data.sh`
+# re-downloads every one of them, and every test that needs one skips cleanly
+# when it is absent — so a fresh clone is green before any of this arrives.
+#
+# What IS committed is everything small enough to make a result reproducible
+# without a network: the GenBank records, the Loghub samples, the RFC texts, the
+# eCFR version index, the TSPLIB instance and its proven optimum, and the two
+# tables derived from the retail spreadsheet.
+online_retail_ii.zip
+osv_pypi.zip
+ami_manual.zip
+synthea_csv.zip
+locomo10.json
+un_consolidated.xml
+_online_retail.xlsx
+osv/
+*.part

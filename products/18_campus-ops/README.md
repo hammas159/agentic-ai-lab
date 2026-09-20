@@ -2,15 +2,56 @@
 
 > Education administration: admissions, timetabling, fee reconciliation, attendance and parent communications.
 
-**Status:** scaffold. The deterministic core is written and tested. The agents, the UI and
-the wiring are not built yet.
+**Status:** runs end to end. Intake is accepted onto the bus and returns; a worker drains
+it; the graph pauses for a person; approving resumes it without regenerating anything. It
+serves the shared operator console at `/`.
 
-## The finding it exists to produce
+## The finding
 
-Timetable clash detection is a solver property and every clash it finds is one a person
-would have found in week three of term. Measure clashes per published timetable at a real
-institution before the solver and after, and separately measure how many the *model* found
-when asked — the gap is the argument for keeping scheduling out of a prompt.
+**Measured on 5,571 real scheduled events** across 3,440 days — Synthea's published
+encounter data, which is a timetable in every respect that matters: a site, a person
+delivering, a person receiving, and a span. Organisation is the room, provider is the
+teacher, patient is the cohort.
+
+| | |
+|---|---:|
+| Days with any clash | 45 of 3,440 (1.3%) |
+| Distinct overlapping pairs | **46** |
+| Clashes by dimension | room 37, teacher 37, cohort 36 |
+
+The per-dimension counts are nearly identical, and the structure underneath them is the
+result:
+
+| Overlap trips | Pairs | What it is |
+|---|---:|---|
+| all three | 27 | a duplicate booking |
+| room + teacher | 10 | one person, two clients, same place |
+| **cohort only** | **9** | **the same person in two places at once** |
+
+**A room-only checker catches 37 of 46 — and misses the nine that are physically
+impossible.** Those nine are one individual booked at two different sites, with two
+different staff, at overlapping times. Nothing about the rooms is wrong; both are free. The
+contradiction is only visible on the third dimension.
+
+That is the version of this product that shipped first: it checked rooms, because rooms are
+the dimension people picture when they say "timetable clash". It would have published a
+schedule containing every one of those nine.
+
+**A double-booked teacher is exactly as common as a double-booked room** — 37 each. There is
+no cheap dimension to skip.
+
+### Why clinic data rather than a university timetable
+
+The ITC-2007 timetabling instances are the obvious corpus and neither mirror served them
+(both returned 404 pages). Rather than construct a timetable — which would have measured the
+construction — the same three-dimensional question is asked of a real schedule that exists.
+The mapping is exact and it is stated here so a reader can disagree with it.
+
+Reproduce it:
+
+```bash
+cd 18_campus-ops && python -m pytest tests/test_real_schedule.py -q     # 10 passed
+```
 
 ## Agents and write authority
 
@@ -61,6 +102,34 @@ sentence around the answer, never to produce the answer.
 PYTHONPATH=src python -m pytest -q
 ```
 
+## Running it
+
+```bash
+cd 18_campus-ops
+python -m pytest -q                      # 20 passed
+PYTHONPATH="src;../platform/src" python -m campusops.app    # console on http://127.0.0.1:8000
+```
+
+`app.py` picks a model by capability rather than by tag — `models.resolve("general", …)`
+returns the best one installed and records which it was, so a later run on a larger model
+is a comparison row rather than an overwrite. The tests never reach a real model:
+`llm.Recorded` raises on any prompt it was not scripted for.
+
+## The graph
+
+Seven nodes, built from `agentplatform.blueprint.review_pipeline`. The same seven every
+product has; what differs is the judgement at each step, which lives in `agents.py`.
+
+```
+triage ──(early exit)──► exit ──► END
+   │
+   └─► gather (fan-out) ──► synthesise ──► compose ──► gate ──► approve ──► commit ──► END
+        [alpha, beta]          [model]      [model]            [pauses]
+```
+
+`triage`, the early exit and `commit` are rules. Two nodes call the model. The gate drops
+anything the model wrote that no tool receipt supports, before a person ever sees it.
+
 ## What it does NOT do
 
 - **It does not admit or reject anyone.** Eligibility against published rules; a person decides.
@@ -75,5 +144,42 @@ PYTHONPATH=src python -m pytest -q
 
 ## Input / Output
 
-Nothing measured yet. No number appears in this README that was not produced on a machine,
-and so far this product has produced none. The first one it owes is the finding above.
+Captured from a real run of this product — `scripts/capture.py` submits the payload below
+through the HTTP surface, drains the queue, and approves. Every figure here came off a
+machine.
+
+**In** — `POST /intake`, keys: `claims`, `issued_receipts`, `sessions`
+
+Published to `campus.tasks`; the call returns `202 {"status": "pending"}` with queue lag
+**1**. Nothing has touched the model at this point.
+
+**Out** — after one worker pass:
+
+| | |
+|---|---|
+| Status | `awaiting_approval`, paused at `approve` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` |
+| Model calls already spent | **2** |
+| Claims kept by the gate | "Backed by a real receipt." |
+| Claims dropped | "Asserted with nothing behind it." |
+| Drop rate | 0.5 |
+
+After `POST /approvals/{run}/approve`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `gather` → `synthesise` → `compose` → `gate` → `approve` → `commit` |
+| Model calls | **2** — resuming added none |
+| Result keys | `branch_status`, `branches`, `branches_failed`, `claims`, `clashes`, `draft`, `drop_rate`, `dropped_claims`, `issued_receipts`, `kept_claims`, `message.draft`, `model`, `publishable`, `published`, `sessions`, `summary`, `summary_subject` |
+
+**The early exit**, on a payload that trips `not_publishable`:
+
+| | |
+|---|---|
+| Status | `done` |
+| Nodes visited | `triage` → `exit` |
+| Model calls | **0** |
+
+That last row is the one worth keeping. The cheap refusal costs nothing at all — no
+gather, no generation — which is the whole reason it sits before the fan-out.

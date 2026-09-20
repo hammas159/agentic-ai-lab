@@ -16,10 +16,42 @@ _PYTHON_VERSION = re.compile(r"python\s*(?:>=|≥)\s*(\d+\.\d+)", re.I)
 _TEST_COUNT = re.compile(r"(\d[\d,]*)\s+tests\b", re.I)
 _ZERO_DEPS = re.compile(r"\bzero\s+(?:runtime\s+)?dependencies\b", re.I)
 
+# A backticked path, which either exists in the repository or does not.
+_PATH = re.compile(r"`([\w./-]+\.(?:py|toml|md|json|yml|yaml|sh|cfg|txt))`")
+# A count of things the repository either contains or does not.
+#
+# Spelled-out numbers are not a nicety. READMEs are written by people, and
+# people write "Eleven standalone tools" and "All ten, at a glance" far more
+# often than "11 tools". A checker that only reads digits found ZERO checkable
+# claims in a real repository whose heading said "All ten" above a table of
+# seven — which is the exact drift it exists to catch.
+_WORD_NUMBERS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+    "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+    "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+    "thirty": 30, "forty": 40, "fifty": 50,
+}
+_NOUNS = r"projects?|repos?|repositories|tools?|modules?|apps?|products?|labs?"
+# The number must bind to the noun it precedes, with at most one adjective
+# between them. A wider gap matched "3 seconds because project 01 has..." and
+# reported it as a claim about project count — a number binds to the nearest
+# noun, and letting it reach past one is how a checker invents findings.
+_ADJECTIVE = r"(?:[a-z]+-[a-z]+|standalone|committed|finished|separate|distinct)\s+"
+_COUNT = re.compile(
+    rf"\b(\d[\d,]*|{'|'.join(_WORD_NUMBERS)})\s+(?:{_ADJECTIVE})?({_NOUNS})\b",
+    re.I,
+)
+# A named dependency, which the project either declares or does not.
+_DEPENDS = re.compile(r"\b(?:depends on|requires|built on)\s+`([\w.-]+)`", re.I)
+
 _CHECKS = (
     ("python_version", _PYTHON_VERSION),
     ("test_count", _TEST_COUNT),
     ("zero_dependencies", _ZERO_DEPS),
+    ("path_exists", _PATH),
+    ("thing_count", _COUNT),
+    ("depends_on", _DEPENDS),
 )
 
 
@@ -84,12 +116,50 @@ def verify(claim: Claim, facts: dict) -> Verdict:
             f"README says {stated}, pytest collected {actual}",
         )
 
-    stated_zero = True
+    if check == "path_exists":
+        root = facts.get("root")
+        if root is None:
+            return Verdict(claim, False, None, "no repository root to resolve against")
+        from pathlib import Path  # noqa: PLC0415
+
+        named = _PATH.search(claim.text).group(1)
+        base = Path(root)
+        found = (base / named).exists() or next(base.rglob(named), None) is not None
+        return Verdict(claim, True, found, f"{named} {'exists' if found else 'is missing'}")
+
+    if check == "thing_count":
+        # A sentence can state several counts — "Eleven standalone tools, 11
+        # projects in all" — and a fact may exist for only one of them.
+        # Checking only the first match reports "no collected count of tools"
+        # and silently drops a claim that was perfectly checkable.
+        nouns = []
+        for match in _COUNT.finditer(claim.text):
+            raw = match.group(1).lower().replace(",", "")
+            stated = int(raw) if raw.isdigit() else _WORD_NUMBERS[raw]
+            noun = match.group(2).lower().rstrip("s")
+            nouns.append(noun)
+            actual = facts.get(f"{noun}_count")
+            if actual is not None:
+                return Verdict(
+                    claim, True, stated == actual, f"README says {stated}, found {actual}"
+                )
+        return Verdict(
+            claim, False, None, f"no collected count of {'/'.join(dict.fromkeys(nouns))}"
+        )
+
+    if check == "depends_on":
+        named = _DEPENDS.search(claim.text).group(1).lower()
+        declared = [d.split("[")[0].split(">")[0].split("=")[0].strip().lower()
+                    for d in facts.get("dependencies", [])]
+        if not declared and "dependencies" not in facts:
+            return Verdict(claim, False, None, "no declared dependency list")
+        return Verdict(claim, True, named in declared, f"{named} in {declared or 'none'}")
+
     actual = list(facts.get("dependencies", []))
     return Verdict(
         claim,
         True,
-        stated_zero and not actual,
+        not actual,
         f"README claims zero dependencies, project declares {actual or 'none'}",
     )
 
