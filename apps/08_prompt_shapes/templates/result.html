@@ -1,0 +1,61 @@
+<div class="card">
+  <h2>The same task, asked five ways</h2>
+
+  <div class="tiles" style="margin-bottom:22px">
+    <div class="tile"><div class="k">Spread</div><div class="v">{{ '%.1f' % (result.spread * 100) }}%</div></div>
+    <div class="tile"><div class="k">Std dev</div><div class="v">{{ '%.1f' % (result.stdev * 100) }}%</div></div>
+    <div class="tile">
+      <div class="k">Flipped on wording</div>
+      <div class="v bad">{{ '%.1f' % (result.flip_rate * 100) }}%</div>
+    </div>
+    <div class="tile"><div class="k">Tasks</div><div class="v">{{ result.n }}</div></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Phrasing</th><th class="num">pass@1</th><th style="width:44%"></th><th class="num">Sole solver</th></tr></thead>
+    <tbody>
+    {% for shape, score in result.scores | dictsort(by='value', reverse=true) %}
+      <tr>
+        <td class="mono">{{ shape }}</td>
+        <td class="num">{{ '%.1f' % (score * 100) }}%</td>
+        <td><div class="bar"><i style="width: {{ (score * 100) | round(1) }}%"></i></div></td>
+        <td class="num muted">{{ result.lone_solver[shape] }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="note">
+    <b>{{ result.spread * 100 | round(1) }} points of spread caused by wording alone.</b>
+    Best is <span class="mono">{{ result.best }}</span>, worst is
+    <span class="mono">{{ result.worst }}</span> — same model, same temperature, same tasks,
+    same execution rule.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Which tasks were never really being measured</h2>
+  <table>
+    <thead><tr><th>Group</th><th class="num">Tasks</th><th class="num">Share</th></tr></thead>
+    <tbody>
+      <tr><td>Solved by every phrasing</td><td class="num good">{{ result.solved_by_all }}</td>
+          <td class="num">{{ '%.1f' % (100 * result.solved_by_all / result.n) }}%</td></tr>
+      <tr><td>Solved by at least one</td><td class="num">{{ result.solved_by_any }}</td>
+          <td class="num">{{ '%.1f' % (100 * result.solved_by_any / result.n) }}%</td></tr>
+      <tr><td><b>Flipped on phrasing alone</b></td><td class="num bad">{{ result.flipped }}</td>
+          <td class="num bad">{{ '%.1f' % (result.flip_rate * 100) }}%</td></tr>
+    </tbody>
+  </table>
+
+  {% if result.flipped_ids %}
+  <p style="margin-top:16px" class="mono">
+    {% for t in result.flipped_ids %}<span class="chip">{{ t }}</span> {% endfor %}
+  </p>
+  {% endif %}
+
+  <p class="note">
+    A task in that last row is solved under one wording and failed under another. For those
+    tasks the benchmark is not measuring whether the model can write the function — it is
+    measuring which sentence it was handed.
+  </p>
+</div>

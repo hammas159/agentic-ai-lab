@@ -80,4 +80,3 @@ def main() -> None:
     lengths = sorted(len(d.problem_statement) for d in data)
     mid = lengths[len(lengths) // 2]
     print(f"\nproblem_statement length: min {lengths[0]}, median {mid}, max {lengths[-1]} chars")
-

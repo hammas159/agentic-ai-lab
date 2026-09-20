@@ -52,16 +52,19 @@ async def runner(params: dict, emit) -> dict:
     passed: dict[str, set[str]] = {}
     pass_rate: dict[str, float] = {}
     for si, size in enumerate(SIZES):
+
         async def progress(done: int, total: int, _s=size, _i=si) -> None:
             # Two models, so the bar spans both halves of the run.
             await emit(_i * total + done, 2 * total, f"{_s}: {done}/{total}")
 
         raws = await model.generate_many(prompts, model=size, on_progress=progress)
         codes = [extract_code(r) if r else "" for r in raws]
-        outs = await asyncio.gather(*[
-            loop.run_in_executor(None, run_tests, c, list(t.tests), t.setup)
-            for c, t in zip(codes, tasks, strict=True)
-        ])
+        outs = await asyncio.gather(
+            *[
+                loop.run_in_executor(None, run_tests, c, list(t.tests), t.setup)
+                for c, t in zip(codes, tasks, strict=True)
+            ]
+        )
         ok = {t.task_id for t, o in zip(tasks, outs, strict=True) if o.passed}
         passed[size] = ok
         pass_rate[size] = len(ok) / n if n else 0.0
@@ -79,8 +82,10 @@ async def runner(params: dict, emit) -> dict:
 
     return {
         "n": n,
-        "small_model": SIZES[0], "big_model": SIZES[1],
-        "small_pass": pass_rate[SIZES[0]], "big_pass": pass_rate[SIZES[1]],
+        "small_model": SIZES[0],
+        "big_model": SIZES[1],
+        "small_pass": pass_rate[SIZES[0]],
+        "big_pass": pass_rate[SIZES[1]],
         "gap": pass_rate[SIZES[1]] - pass_rate[SIZES[0]],
         "buckets": {k: len(v) for k, v in buckets.items()},
         "bucket_ids": {k: v[:12] for k, v in buckets.items()},
@@ -106,8 +111,14 @@ app = create_app(
     icon="📐",
     runner=runner,
     fields=[
-        Field("limit", "MBPP tasks", default=80, min=10, max=400,
-              hint="each task is generated twice, once per model size"),
+        Field(
+            "limit",
+            "MBPP tasks",
+            default=80,
+            min=10,
+            max=400,
+            hint="each task is generated twice, once per model size",
+        ),
     ],
     result_template="result.html",
     about=ABOUT,

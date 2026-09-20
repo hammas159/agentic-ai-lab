@@ -208,4 +208,3 @@ def coverage(instances, listings: dict[str, list[str]]) -> dict:
         "per_repo": {r: (sum(v), len(v)) for r, v in per_repo.items()},
         "missing": missing,
     }
-

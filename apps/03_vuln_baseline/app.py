@@ -77,10 +77,16 @@ def _score(pairs: list[tuple[bool, bool]]) -> dict:
     rec = tp / (tp + fn) if tp + fn else 0.0
     majority = max(sum(1 for _, a in pairs if a), sum(1 for _, a in pairs if not a)) / n
     return {
-        "n": len(pairs), "accuracy": (tp + tn) / n, "majority": majority,
-        "precision": prec, "recall": rec,
+        "n": len(pairs),
+        "accuracy": (tp + tn) / n,
+        "majority": majority,
+        "precision": prec,
+        "recall": rec,
         "f1": 2 * prec * rec / (prec + rec) if prec + rec else 0.0,
-        "tp": tp, "tn": tn, "fp": fp, "fn": fn,
+        "tp": tp,
+        "tn": tn,
+        "fp": fp,
+        "fn": fn,
         "said_vulnerable": tp + fp,
     }
 
@@ -143,8 +149,14 @@ app = create_app(
     icon="🛡",
     runner=runner,
     fields=[
-        Field("limit", "Functions to classify", default=120, min=20, max=800,
-              hint="from the Devign test split; one model call each"),
+        Field(
+            "limit",
+            "Functions to classify",
+            default=120,
+            min=20,
+            max=800,
+            hint="from the Devign test split; one model call each",
+        ),
     ],
     result_template="result.html",
     about=ABOUT,

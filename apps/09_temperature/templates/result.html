@@ -1,0 +1,69 @@
+<div class="card">
+  <h2>Temperature against k</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Temp</th>
+        {% for k in result.ks %}<th class="num">pass@{{ k }}</th>{% endfor %}
+        <th class="num">Distinct / {{ result.samples }}</th>
+        <th style="width:26%"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for t in result.temps %}
+      <tr>
+        <td class="mono">{{ t }}</td>
+        {% for k in result.ks %}
+          {% set v = result.table[t][k] %}
+          <td class="num {{ 'good' if (t == result.best_at_1 and k == result.ks[0]) or (t == result.best_at_k and k == result.k_label) else '' }}">
+            {{ '%.1f' % (v * 100) }}%
+          </td>
+        {% endfor %}
+        <td class="num muted">{{ '%.1f' % result.diversity[t] }}</td>
+        <td><div class="bar"><i style="width: {{ (result.table[t][result.k_label] * 100) | round(1) }}%"></i></div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="tiles" style="margin-top:22px">
+    <div class="tile">
+      <div class="k">Best for pass@{{ result.ks[0] }}</div>
+      <div class="v">{{ result.best_at_1 }}</div>
+    </div>
+    <div class="tile">
+      <div class="k">Best for pass@{{ result.k_label }}</div>
+      <div class="v">{{ result.best_at_k }}</div>
+    </div>
+    <div class="tile">
+      <div class="k">Ordering flips</div>
+      <div class="v {{ 'warn' if result.flips else 'muted' }}">{{ 'yes' if result.flips else 'no' }}</div>
+    </div>
+  </div>
+
+  {% if result.flips %}
+  <p class="note">
+    <b>The optima differ.</b> Tuning on pass@{{ result.ks[0] }} and then deploying with
+    k={{ result.k_label }} costs {{ '%.1f' % (result.cost_of_tuning_on_1 * 100) }} points of
+    achievable pass@{{ result.k_label }} — accuracy that was available and was left on the
+    table by benchmarking with the wrong metric.
+  </p>
+  {% else %}
+  <p class="note">
+    No flip at this sample size: T={{ result.best_at_1 }} wins at every k measured. With
+    only {{ result.samples }} samples per task the diversity that pass@k rewards may not
+    have room to show — the distinct-samples column is the thing to watch.
+  </p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Why greedy decoding caps pass@k</h2>
+  <p>At temperature 0 the model returns the same answer every time, so drawing k samples
+  draws the same sample k times. The distinct column shows it directly: <b>1.0 distinct of
+  {{ result.samples }}</b> at T=0. pass@k cannot exceed pass@1 there, however large k gets.</p>
+  <p class="muted">Scored with <code>1 − C(n−c, k) / C(n, k)</code> rather than "did any of
+  my k samples pass", which is biased upward and moves with how many you happened to draw —
+  which is why numbers from different papers are so often not comparable.</p>
+</div>

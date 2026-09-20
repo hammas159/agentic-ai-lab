@@ -52,29 +52,38 @@ async def runner(params: dict, emit) -> dict:
             None, run_tests, task.reference, list(task.tests), task.setup
         )
         if not ref_ok.passed:
-            await emit(i, len(tasks), f"{task.task_id}: reference fails its own tests, skipped")
+            await emit(i, len(tasks), f"{task.task_id}: reference fails its own tests")
             continue
 
         muts = mutants(task.reference, limit=per_problem)
         for m in muts:
-            out = await loop.run_in_executor(
-                None, run_tests, m.code, list(task.tests), task.setup
-            )
+            out = await loop.run_in_executor(None, run_tests, m.code, list(task.tests), task.setup)
             bucket = kinds.setdefault(m.kind, [0, 0])
             bucket[0] += 1
             if out.passed:
                 bucket[1] += 1
                 # Only survivors need a witness; a killed mutant is already decided.
                 w = await loop.run_in_executor(
-                    None, find_witness, task.reference, m.code, task.entry_point,
-                    task.tests, task.setup,
+                    None,
+                    find_witness,
+                    task.reference,
+                    m.code,
+                    task.entry_point,
+                    task.tests,
+                    task.setup,
                 )
-                rows.append({
-                    "task_id": task.task_id, "kind": m.kind, "where": m.where,
-                    "entry_point": task.entry_point,
-                    "proven": w.found,
-                    "witness": ({"args": w.args, "ref": w.ref, "mut": w.mut} if w.found else None),
-                })
+                rows.append(
+                    {
+                        "task_id": task.task_id,
+                        "kind": m.kind,
+                        "where": m.where,
+                        "entry_point": task.entry_point,
+                        "proven": w.found,
+                        "witness": (
+                            {"args": w.args, "ref": w.ref, "mut": w.mut} if w.found else None
+                        ),
+                    }
+                )
             elif out.status in killed_how:
                 killed_how[out.status] += 1
 
@@ -96,9 +105,13 @@ async def runner(params: dict, emit) -> dict:
         "proven_share_of_survivors": len(proven) / survived if survived else 0.0,
         "proven_share_of_all": len(proven) / total if total else 0.0,
         "killed_how": killed_how,
-        "caught_by_crash": (killed_how["error"] + killed_how["timeout"]) / killed if killed else 0.0,
-        "by_kind": {k: {"run": v[0], "survived": v[1], "rate": v[1] / v[0] if v[0] else 0.0}
-                    for k, v in sorted(kinds.items(), key=lambda kv: -kv[1][0])},
+        "caught_by_crash": (killed_how["error"] + killed_how["timeout"]) / killed
+        if killed
+        else 0.0,
+        "by_kind": {
+            k: {"run": v[0], "survived": v[1], "rate": v[1] / v[0] if v[0] else 0.0}
+            for k, v in sorted(kinds.items(), key=lambda kv: -kv[1][0])
+        },
         "witnesses": [r for r in proven][:14],
     }
 
@@ -124,10 +137,22 @@ app = create_app(
     icon="🧫",
     runner=runner,
     fields=[
-        Field("limit", "Problems", default=60, min=5, max=400,
-              hint="MBPP problems to mutate; each runs its own tests many times"),
-        Field("per_problem", "Mutants per problem", default=8, min=1, max=16,
-              hint="single-point changes: comparisons, operators, constants, conditions"),
+        Field(
+            "limit",
+            "Problems",
+            default=60,
+            min=5,
+            max=400,
+            hint="MBPP problems to mutate; each runs its own tests many times",
+        ),
+        Field(
+            "per_problem",
+            "Mutants per problem",
+            default=8,
+            min=1,
+            max=16,
+            hint="single-point changes: comparisons, operators, constants, conditions",
+        ),
     ],
     result_template="result.html",
     about=ABOUT,

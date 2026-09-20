@@ -27,6 +27,7 @@ import json
 import os
 import time
 import uuid
+from contextlib import suppress
 from typing import Any
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
@@ -103,29 +104,31 @@ async def emit_progress(job_id: str, app: str, done: int, total: int, note: str 
     p = await producer()
     if p is None:
         return
-    try:
+    with suppress(KafkaError):
         await p.send(
             TOPIC_PROGRESS,
-            {"job_id": job_id, "app": app, "done": done, "total": total,
-             "note": note, "at": time.time()},
+            {
+                "job_id": job_id,
+                "app": app,
+                "done": done,
+                "total": total,
+                "note": note,
+                "at": time.time(),
+            },
             key=app,
         )
-    except KafkaError:
-        pass
 
 
 async def emit_completed(job_id: str, app: str, result: dict) -> None:
     p = await producer()
     if p is None:
         return
-    try:
+    with suppress(KafkaError):
         await p.send_and_wait(
             TOPIC_COMPLETED,
             {"job_id": job_id, "app": app, "result": result, "at": time.time()},
             key=app,
         )
-    except KafkaError:
-        pass
 
 
 def consumer(topic: str, group: str, from_beginning: bool = False) -> AIOKafkaConsumer:

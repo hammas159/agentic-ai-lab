@@ -108,4 +108,3 @@ def load(limit: int | None = None) -> list[Instance]:
         if limit and len(rows) >= limit:
             break
     return rows
-

@@ -16,11 +16,12 @@ import asyncio
 import json
 import os
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from fastapi import BackgroundTasks, FastAPI, Form, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sse_starlette.sse import EventSourceResponse
@@ -62,6 +63,13 @@ async def _model_up(model: str) -> bool:
         return False
 
 
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Close the shared Kafka producer on shutdown; on_event is deprecated."""
+    yield
+    await bus.close()
+
+
 def create_app(
     *,
     slug: str,
@@ -74,7 +82,7 @@ def create_app(
     model: str = "qwen2.5-coder:14b",
 ) -> FastAPI:
     theme = get_theme(slug)
-    app = FastAPI(title=theme.name, docs_url="/api/docs")
+    app = FastAPI(title=theme.name, docs_url="/api/docs", lifespan=_lifespan)
 
     # App templates first so a per-app `result.html` wins, then the shared shell.
     tpl = Jinja2Templates(directory=[str(templates_dir), str(HERE / "templates")])
@@ -98,8 +106,12 @@ def create_app(
         return tpl.TemplateResponse(
             request,
             "index.html",
-            ctx(request, health=await health(), fields=fields,
-                recent=await cache.recent_jobs(slug, 5)),
+            ctx(
+                request,
+                health=await health(),
+                fields=fields,
+                recent=await cache.recent_jobs(slug, 5),
+            ),
         )
 
     @app.post("/run")
@@ -128,8 +140,13 @@ def create_app(
         return tpl.TemplateResponse(
             request,
             "job.html",
-            ctx(request, health=await health(), job=job, job_id=job_id,
-                result_template=result_template),
+            ctx(
+                request,
+                health=await health(),
+                job=job,
+                job_id=job_id,
+                result_template=result_template,
+            ),
         )
 
     @app.get("/job/{job_id}/stream")
@@ -184,10 +201,6 @@ def create_app(
     async def healthz():
         h = await health()
         return JSONResponse(h, status_code=200 if h["model"] else 503)
-
-    @app.on_event("shutdown")
-    async def _shutdown():
-        await bus.close()
 
     return app
 

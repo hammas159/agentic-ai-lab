@@ -111,9 +111,7 @@ async def runner(params: dict, emit) -> dict:
     await emit(3, 5, f"embeddings ranked {len(embed_ranked)}")
 
     # --- generative -----------------------------------------------------------------
-    raw = await model.generate(
-        LOCATE_PROMPT.format(repo=repo, issue=issue[:6000]), num_predict=256
-    )
+    raw = await model.generate(LOCATE_PROMPT.format(repo=repo, issue=issue[:6000]), num_predict=256)
     # The model names module paths; matplotlib's package lives under lib/, so resolve
     # against the real listing before comparing. Only unambiguous matches resolve.
     llm_ranked = resolve(_parse_paths(raw or ""), set(files))
@@ -184,13 +182,22 @@ app = create_app(
     icon="🧭",
     runner=runner,
     fields=[
-        Field("repo", "Repository", kind="select",
-              default="django/django", options=_repos(),
-              hint="file listings cached from the GitHub Trees API"),
-        Field("issue", "Bug report", kind="textarea",
-              default="QuerySet.union() crashes when combined with values_list() "
-                      "and a sliced queryset. Traceback ends in the SQL compiler.",
-              hint="paste a real issue body"),
+        Field(
+            "repo",
+            "Repository",
+            kind="select",
+            default="django/django",
+            options=_repos(),
+            hint="file listings cached from the GitHub Trees API",
+        ),
+        Field(
+            "issue",
+            "Bug report",
+            kind="textarea",
+            default="QuerySet.union() crashes when combined with values_list() "
+            "and a sliced queryset. Traceback ends in the SQL compiler.",
+            hint="paste a real issue body",
+        ),
     ],
     result_template="result.html",
     about=ABOUT,

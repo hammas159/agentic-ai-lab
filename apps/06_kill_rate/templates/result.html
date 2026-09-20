@@ -1,0 +1,75 @@
+<div class="card">
+  <h2>What the generated tests actually catch</h2>
+
+  {% set fc = result.arms.from_code %}
+  {% set fd = result.arms.from_description %}
+
+  <div class="tiles" style="margin-bottom:22px">
+    <div class="tile">
+      <div class="k">Model kill rate</div>
+      <div class="v good">{{ '%.1f' % (fc.kill_rate * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">MBPP kill rate</div>
+      <div class="v">{{ '%.1f' % (fc.bench_kill_rate * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Difference</div>
+      <div class="v {{ 'good' if result.advantage > 0 else 'bad' }}">{{ '%+.1f' % (result.advantage * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Asserts vs MBPP</div>
+      <div class="v">{{ '%.1f' % result.assert_ratio }}×</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Arm</th><th class="num">Valid suites</th><th class="num">Mutants</th><th class="num">Asserts</th><th class="num">Kill rate</th><th style="width:22%"></th></tr></thead>
+    <tbody>
+    {% for name, a in result.arms.items() %}
+      <tr>
+        <td class="mono">{{ name }}</td>
+        <td class="num {{ 'bad' if a.validity < 0.3 else '' }}">{{ '%.1f' % (a.validity * 100) }}%</td>
+        <td class="num">{{ a.mutants }}</td>
+        <td class="num">{{ '%.1f' % a.mean_asserts }}</td>
+        <td class="num">{{ '%.1f' % (a.kill_rate * 100) }}%</td>
+        <td><div class="bar"><i style="width: {{ (a.kill_rate * 100) | round(1) }}%"></i></div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="note">
+    Two different things are being measured. <b>Validity</b> — does the suite pass the
+    correct code — is a property of the <i>specification</i>: only
+    {{ '%.1f' % (fd.validity * 100) }}% of suites written from the task description agree
+    with the reference, because the description never says what the function returns.
+    <b>Kill rate</b> is a property of the <i>tests</i>, and it is only meaningful on suites
+    that are valid in the first place.
+  </p>
+</div>
+
+{% if result.examples %}
+<div class="card">
+  <h2>What the model wrote, next to what MBPP ships</h2>
+  {% for ex in result.examples %}
+    <div style="margin-bottom:20px">
+      <p style="margin:0 0 8px"><b class="mono">{{ ex.entry_point }}</b>
+         <span class="muted mono">{{ ex.task_id }}</span></p>
+      <table>
+        <thead><tr><th style="width:50%">MBPP — 3 asserts</th><th>Model — {{ ex.model_asserts | length }} shown</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="mono" style="font-size:12px; vertical-align:top">
+              {% for a in ex.mbpp_asserts %}{{ a }}<br>{% endfor %}
+            </td>
+            <td class="mono" style="font-size:12px; vertical-align:top">
+              {% for a in ex.model_asserts %}{{ a }}<br>{% endfor %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}

@@ -166,4 +166,3 @@ def _normalise(code: str) -> str:
         return ast.unparse(ast.parse(code))
     except SyntaxError:
         return code
-

@@ -26,6 +26,7 @@ import hashlib
 import json
 import os
 import time
+from contextlib import suppress
 from typing import Any
 
 import redis.asyncio as aioredis
@@ -77,12 +78,8 @@ async def get_generation(
 async def put_generation(
     model: str, prompt: str, temperature: float, seed: int | None, response: str
 ) -> None:
-    try:
-        await client().set(
-            gen_key(model, prompt, temperature, seed), response, ex=GEN_TTL
-        )
-    except Exception:
-        pass
+    with suppress(Exception):
+        await client().set(gen_key(model, prompt, temperature, seed), response, ex=GEN_TTL)
 
 
 async def cache_stats() -> dict[str, Any]:
@@ -106,7 +103,7 @@ async def cache_stats() -> dict[str, Any]:
 
 
 async def create_job(job_id: str, app: str, params: dict) -> None:
-    try:
+    with suppress(Exception):
         await client().hset(
             f"{JOB_PREFIX}{job_id}",
             mapping={
@@ -119,19 +116,17 @@ async def create_job(job_id: str, app: str, params: dict) -> None:
             },
         )
         await client().expire(f"{JOB_PREFIX}{job_id}", RESULT_TTL)
-    except Exception:
-        pass
 
 
 async def update_job(job_id: str, **fields: Any) -> None:
-    try:
+    with suppress(Exception):
         await client().hset(
             f"{JOB_PREFIX}{job_id}",
-            mapping={k: (json.dumps(v) if isinstance(v, dict | list) else str(v))
-                     for k, v in fields.items()},
+            mapping={
+                k: (json.dumps(v) if isinstance(v, dict | list) else str(v))
+                for k, v in fields.items()
+            },
         )
-    except Exception:
-        pass
 
 
 async def get_job(job_id: str) -> dict | None:
@@ -140,11 +135,11 @@ async def get_job(job_id: str) -> dict | None:
         if not data:
             return None
         for key in ("params", "result"):
+            # A field written before it was JSON, or written as a plain string, stays
+            # a string rather than failing the whole lookup.
             if key in data:
-                try:
+                with suppress(json.JSONDecodeError, TypeError):
                     data[key] = json.loads(data[key])
-                except (json.JSONDecodeError, TypeError):
-                    pass
         return data
     except Exception:
         return None
@@ -170,10 +165,8 @@ async def recent_jobs(app: str, limit: int = 12) -> list[dict]:
 
 
 async def publish_progress(job_id: str, payload: dict) -> None:
-    try:
+    with suppress(Exception):
         await client().publish(PROGRESS_CHANNEL.format(job_id=job_id), json.dumps(payload))
-    except Exception:
-        pass
 
 
 async def subscribe_progress(job_id: str):

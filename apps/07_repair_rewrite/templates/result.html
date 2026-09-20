@@ -1,0 +1,62 @@
+<div class="card">
+  <h2>Two ways to spend one more call</h2>
+
+  <div class="tiles" style="margin-bottom:22px">
+    <div class="tile"><div class="k">First attempt</div><div class="v">{{ '%.1f' % (result.first_pass * 100) }}%</div></div>
+    <div class="tile"><div class="k">Failures to fix</div><div class="v">{{ result.failures }}</div></div>
+    <div class="tile"><div class="k">Repair fixed</div><div class="v">{{ '%.1f' % (result.repair_rate * 100) }}%</div></div>
+    <div class="tile"><div class="k">Rewrite fixed</div><div class="v">{{ '%.1f' % (result.rewrite_rate * 100) }}%</div></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Outcome</th><th class="num">Count</th><th class="num">Share</th><th style="width:40%"></th></tr></thead>
+    <tbody>
+      {% set rows = [
+        ('both worked', result.both),
+        ('only repair', result.only_repair),
+        ('only rewrite', result.only_rewrite),
+        ('neither', result.neither)
+      ] %}
+      {% for label, count in rows %}
+        {% set share = count / result.failures if result.failures else 0 %}
+        <tr>
+          <td class="{{ 'bad' if label == 'neither' else '' }}">{{ label }}</td>
+          <td class="num">{{ count }}</td>
+          <td class="num">{{ '%.1f' % (share * 100) }}%</td>
+          <td><div class="bar {{ 'alt' if label == 'neither' else '' }}">
+            <i style="width: {{ (share * 100) | round(1) }}%"></i></div></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="note">
+    <b>{{ '%.1f' % (result.neither_rate * 100) }}% survived both strategies.</b>
+    {% if (result.repair - result.rewrite) | abs <= 3 %}
+    The difference between repair and rewrite here is
+    {{ (result.repair - result.rewrite) | abs }} tasks out of {{ result.failures }} — that
+    is noise, and this page will not dress it up as a winner.
+    {% endif %}
+    The number that matters is the one that did not move: tasks a model fails on its first
+    attempt are mostly tasks it cannot do, not tasks it is one nudge away from.
+  </p>
+</div>
+
+{% if result.examples %}
+<div class="card">
+  <h2>Per failure</h2>
+  <table>
+    <thead><tr><th>Task</th><th>Repair</th><th>Rewrite</th><th>First error</th></tr></thead>
+    <tbody>
+    {% for e in result.examples %}
+      <tr>
+        <td class="mono muted">{{ e.task_id }}</td>
+        <td>{% if e.repair %}<span class="good">fixed</span>{% else %}<span class="muted">no</span>{% endif %}</td>
+        <td>{% if e.rewrite %}<span class="good">fixed</span>{% else %}<span class="muted">no</span>{% endif %}</td>
+        <td class="mono muted" style="font-size:12px">{{ e.error }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

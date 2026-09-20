@@ -146,9 +146,9 @@ def cosine_rank(
 ) -> list[tuple[str, float]]:
     qn = math.sqrt(sum(x * x for x in qvec)) or 1.0
     scored = []
-    for path, v in zip(docs, doc_vecs):
+    for path, v in zip(docs, doc_vecs, strict=False):
         dn = math.sqrt(sum(x * x for x in v)) or 1.0
-        scored.append((path, sum(a * b for a, b in zip(qvec, v)) / (qn * dn)))
+        scored.append((path, sum(a * b for a, b in zip(qvec, v, strict=False)) / (qn * dn)))
     scored.sort(key=lambda kv: -kv[1])
     return scored[:top]
 

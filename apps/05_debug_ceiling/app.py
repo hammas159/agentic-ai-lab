@@ -83,9 +83,7 @@ def build_graph():
     """generate -> execute -> repair -> execute -> ... until solved or out of rounds."""
 
     async def generate(state: DebugState) -> dict:
-        raw = await model.generate(
-            FIRST.format(prompt=state["prompt"], test=state["test"]), seed=1
-        )
+        raw = await model.generate(FIRST.format(prompt=state["prompt"], test=state["test"]), seed=1)
         return {"code": extract_code(raw) if raw else "", "round": 1}
 
     async def repair(state: DebugState) -> dict:
@@ -143,10 +141,16 @@ async def runner(params: dict, emit) -> dict:
         async with sem:
             final = await graph.ainvoke(
                 {
-                    "task_id": task.task_id, "prompt": task.prompt,
-                    "test": task.tests[0], "tests": list(task.tests),
-                    "setup": task.setup, "code": "", "error": "",
-                    "round": 0, "solved": False, "max_rounds": max_rounds,
+                    "task_id": task.task_id,
+                    "prompt": task.prompt,
+                    "test": task.tests[0],
+                    "tests": list(task.tests),
+                    "setup": task.setup,
+                    "code": "",
+                    "error": "",
+                    "round": 0,
+                    "solved": False,
+                    "max_rounds": max_rounds,
                 },
                 {"recursion_limit": 2 * max_rounds + 6},
             )
@@ -207,10 +211,22 @@ app = create_app(
     icon="🌿",
     runner=runner,
     fields=[
-        Field("limit", "MBPP tasks", default=40, min=5, max=200,
-              hint="each task runs its own graph to completion"),
-        Field("rounds", "Max rounds", default=5, min=1, max=8,
-              hint="the recursion cap on the repair loop"),
+        Field(
+            "limit",
+            "MBPP tasks",
+            default=40,
+            min=5,
+            max=200,
+            hint="each task runs its own graph to completion",
+        ),
+        Field(
+            "rounds",
+            "Max rounds",
+            default=5,
+            min=1,
+            max=8,
+            hint="the recursion cap on the repair loop",
+        ),
     ],
     result_template="result.html",
     about=ABOUT,

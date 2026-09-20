@@ -1,0 +1,73 @@
+<div class="card">
+  <h2>Two specifications, same tests</h2>
+
+  <div class="tiles" style="margin-bottom:22px">
+    <div class="tile">
+      <div class="k">From MBPP's sentence</div>
+      <div class="v">{{ '%.1f' % (result.direct * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">From the model's prose</div>
+      <div class="v good">{{ '%.1f' % (result.roundtrip * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Drift</div>
+      <div class="v {{ 'good' if result.drift > 0 else 'bad' }}">{{ '%+.1f' % (result.drift * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Description length</div>
+      <div class="v">{{ result.mean_model_chars | round(0) | int }}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Movement</th><th class="num">Tasks</th><th class="num">Share</th></tr></thead>
+    <tbody>
+      <tr><td>Solved from the code-derived description, not MBPP's</td>
+          <td class="num good">{{ result.gained }}</td>
+          <td class="num">{{ '%.1f' % (100 * result.gained / result.n) }}%</td></tr>
+      <tr><td>Solved from MBPP's, lost in the roundtrip</td>
+          <td class="num bad">{{ result.lost }}</td>
+          <td class="num">{{ '%.1f' % (100 * result.lost / result.n) }}%</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:20px">
+    <p style="margin:0 0 6px"><b>Model's description</b> — {{ result.mean_model_chars | round(0) | int }} chars average</p>
+    <div class="bar"><i style="width:100%"></i></div>
+    <p style="margin:12px 0 6px"><b>MBPP's description</b> — {{ result.mean_mbpp_chars | round(0) | int }} chars average</p>
+    <div class="bar alt"><i style="width: {{ (100 * result.mean_mbpp_chars / result.mean_model_chars) | round(1) if result.mean_model_chars else 0 }}%"></i></div>
+  </div>
+
+  {% if result.drift > 0 %}
+  <p class="note">
+    The roundtrip is <b>better</b>, which is the opposite of what a lossy channel should do.
+    The description is not better documentation — it is a <b>leak</b>. It was written with
+    the implementation in view, so it encodes the return type, the empty-input behaviour and
+    the tie-breaking that MBPP's sentence never specified.
+    <br><br>
+    The consequence: a docstring generated from an implementation cannot be used to evaluate
+    that implementation. It is downstream of the code and agrees with it by construction.
+  </p>
+  {% endif %}
+</div>
+
+{% if result.examples %}
+<div class="card">
+  <h2>What the extra characters bought</h2>
+  <p class="muted" style="margin-top:-6px">Tasks solved from the model's description and not from MBPP's.</p>
+  {% for ex in result.examples %}
+    <div style="margin-bottom:22px">
+      <p style="margin:0 0 8px"><b class="mono">{{ ex.entry_point }}</b>
+        <span class="muted mono">{{ ex.task_id }}</span></p>
+      <table>
+        <thead><tr><th style="width:34%">MBPP</th><th>Model, describing the reference</th></tr></thead>
+        <tbody><tr>
+          <td style="vertical-align:top; font-size:13px">{{ ex.mbpp }}</td>
+          <td style="vertical-align:top; font-size:13px">{{ ex.model }}</td>
+        </tr></tbody>
+      </table>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
