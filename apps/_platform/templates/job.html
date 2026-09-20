@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Run {{ job_id }} · {{ theme.name }}{% endblock %}
+{% block content %}
+
+<div class="card" id="runner">
+  <h2>Run {{ job_id }}
+    <span class="chip" style="float:right">{{ job.transport or 'inline' }}</span>
+  </h2>
+
+  <div id="status" class="mono muted">
+    <span class="spin">◐</span> starting…
+  </div>
+  <div class="progress"><i id="pbar"></i></div>
+  <div class="log" id="log"></div>
+</div>
+
+<div id="result" hx-get="/job/{{ job_id }}/result" hx-trigger="load once, resultready from:body"></div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  // Progress arrives over SSE, fed by Redis pub/sub from whichever worker picked the
+  // job off Kafka. The page never polls.
+  const log  = document.getElementById('log');
+  const bar  = document.getElementById('pbar');
+  const stat = document.getElementById('status');
+  const src  = new EventSource('/job/{{ job_id }}/stream');
+
+  function line(text) {
+    log.textContent += text + '\n';
+    log.scrollTop = log.scrollHeight;
+  }
+
+  src.addEventListener('tick', e => {
+    const d = JSON.parse(e.data);
+    if (d.total) {
+      const pct = Math.round(100 * d.done / d.total);
+      bar.style.width = pct + '%';
+      stat.innerHTML = '<span class="spin">◐</span> ' + d.done + ' / ' + d.total + ' — ' + pct + '%';
+    }
+    if (d.note) line(d.note);
+  });
+
+  src.addEventListener('done', e => {
+    const d = JSON.parse(e.data || '{}');
+    src.close();
+    bar.style.width = '100%';
+    if (d.status === 'error') {
+      stat.innerHTML = '<span class="bad">failed</span>';
+      if (d.note) line('ERROR: ' + d.note);
+    } else {
+      stat.innerHTML = '<span class="good">complete</span>';
+    }
+    document.body.dispatchEvent(new Event('resultready'));
+  });
+
+  src.onerror = () => { stat.innerHTML = '<span class="warn">stream closed</span>'; src.close(); };
+</script>
+{% endblock %}

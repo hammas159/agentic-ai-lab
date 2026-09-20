@@ -1,0 +1,50 @@
+[project]
+name = "agentplatform"
+version = "0.1.0"
+description = "Shared agent platform: topics, keys, write authority, grounding gate, admission control, gated memory, graph runtime and HTTP surface."
+readme = "README.md"
+authors = [
+    { name = "Muhammad Hammas", email = "214618908+hammasbuilds@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+
+# Nothing is required to import this package or to run its tests. Kafka, Redis
+# and Postgres are deployment targets reached through ports.py; FastAPI,
+# LangGraph and ollama are optional extras, each behind a lazy import that
+# raises something legible when it is absent.
+dependencies = []
+
+[project.optional-dependencies]
+# The HTTP surface. api.create_app() needs these; Runtime does not.
+api = ["fastapi>=0.115", "uvicorn>=0.30"]
+# The real model adapter. Only llm.Ollama touches it.
+ollama = ["httpx>=0.27"]
+# graphs.to_langgraph() compiles the same declaration onto LangGraph.
+# Everything runs on graphs.run() without it, which is why it is not required.
+langgraph = ["langgraph>=0.2", "langchain-core>=0.3", "langchain-ollama>=0.2"]
+# What a deployment actually binds the ports to.
+infra = ["redis>=5", "psycopg[binary]>=3.2", "confluent-kafka>=2.5"]
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "agentplatform"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 96
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]

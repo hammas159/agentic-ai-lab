@@ -1,0 +1,70 @@
+<div class="card">
+  <h2>Model vs a constant answer</h2>
+
+  <div class="tiles" style="margin-bottom:20px">
+    <div class="tile">
+      <div class="k">Model accuracy</div>
+      <div class="v">{{ '%.1f' % (result.full.accuracy * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Majority baseline</div>
+      <div class="v">{{ '%.1f' % (result.full.majority * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Difference</div>
+      <div class="v {{ 'good' if result.beats_baseline > 0 else 'bad' }}">
+        {{ '%+.1f' % (result.beats_baseline * 100) }}%
+      </div>
+    </div>
+    <div class="tile"><div class="k">Rows</div><div class="v">{{ result.full.n }}</div></div>
+  </div>
+
+  {% if result.beats_baseline <= 0 %}
+  <p class="note">
+    The model is <b>below a classifier that reads nothing and always answers SAFE</b>.
+    Every point of apparent skill here is a point the baseline already had.
+  </p>
+  {% else %}
+  <p class="note">
+    The model beats the constant by {{ '%.1f' % (result.beats_baseline * 100) }} points.
+    Devign's published accuracies sit near 62% against a 54.1% baseline, so read that
+    difference against eight points of total headroom, not against zero.
+  </p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Is it discriminating, or just guessing?</h2>
+  <table>
+    <thead><tr><th></th><th class="num">Predicted vulnerable</th><th class="num">Predicted safe</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="muted">Actually vulnerable</td>
+        <td class="num good">{{ result.full.tp }}</td>
+        <td class="num bad">{{ result.full.fn }}</td>
+      </tr>
+      <tr>
+        <td class="muted">Actually safe</td>
+        <td class="num bad">{{ result.full.fp }}</td>
+        <td class="num good">{{ result.full.tn }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:18px">
+    <p style="margin:0 0 6px"><b>Says vulnerable</b> {{ '%.1f' % (result.said_vulnerable_rate * 100) }}%
+      of the time <span class="muted">— true rate is {{ '%.1f' % (result.true_vulnerable_rate * 100) }}%</span></p>
+    <div class="bar"><i style="width: {{ (result.said_vulnerable_rate * 100) | round(1) }}%"></i></div>
+    <div class="bar alt" style="margin-top:6px"><i style="width: {{ (result.true_vulnerable_rate * 100) | round(1) }}%"></i></div>
+  </div>
+
+  <table style="margin-top:20px">
+    <thead><tr><th>Metric</th><th class="num">Value</th></tr></thead>
+    <tbody>
+      <tr><td class="muted">precision</td><td class="num">{{ '%.1f' % (result.full.precision * 100) }}%</td></tr>
+      <tr><td class="muted">recall</td><td class="num">{{ '%.1f' % (result.full.recall * 100) }}%</td></tr>
+      <tr><td class="muted">F1</td><td class="num">{{ '%.1f' % (result.full.f1 * 100) }}%</td></tr>
+      <tr><td class="muted">unparsable answers</td><td class="num">{{ result.unparsed }}</td></tr>
+    </tbody>
+  </table>
+</div>

@@ -1,11 +1,8 @@
 __pycache__/
-*.py[cod]
+*.pyc
 .venv/
-.pytest_cache/
+.venv_stub/
 .ruff_cache/
-*.egg-info/
-dist/
-build/
-node_modules/
-out/
-.astro/
+.pytest_cache/
+# Vendored Hugging Face tree listings are kept (data/trees) - re-fetching them needs
+# the GitHub API and this connection drops large tree responses.

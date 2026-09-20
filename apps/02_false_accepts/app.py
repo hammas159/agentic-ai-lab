@@ -1,0 +1,135 @@
+"""False Accepts — how much wrong code do three assert statements let through?
+
+MBPP specifies each problem with exactly three asserts. Break the reference solution in one
+place and run the same three asserts: if they still pass, the benchmark cannot tell the
+reference from a program that is not it.
+
+Survival alone overstates the problem, because some mutations are equivalent to the original
+and no test could catch them. So every survivor is hunted for a **separating input** - a
+value on which the mutant and the reference return different things. A survivor with a
+witness is a provably wrong program that MBPP marked correct; one without is reported as
+unproven rather than counted.
+
+Measured over the whole benchmark: 17.6% of 5,116 mutants survive, and 442 of them are
+provably wrong. 227 of 782 problems accept at least one. The hand-verified "sanitized" split
+is no better - 16.0% - because reviewing an assert cannot add the fourth assert that would
+pin down a boundary.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from apps._engine.datasets import load  # noqa: E402
+from apps._engine.differential import find_witness  # noqa: E402
+from apps._engine.execute import run as run_tests  # noqa: E402
+from apps._engine.mutate import mutants  # noqa: E402
+from apps._platform.base import Field, create_app  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
+SLUG = "false-accepts"
+
+
+async def runner(params: dict, emit) -> dict:
+    limit = int(params.get("limit", 60))
+    per_problem = int(params.get("per_problem", 8))
+
+    tasks = load("mbpp", limit)
+    await emit(0, limit, f"{len(tasks)} MBPP problems, up to {per_problem} mutants each")
+
+    rows: list[dict] = []
+    kinds: dict[str, list[int]] = {}
+    killed_how = {"fail": 0, "error": 0, "timeout": 0}
+
+    loop = asyncio.get_running_loop()
+    for i, task in enumerate(tasks, 1):
+        # The reference must pass its own tests or every mutant of it is meaningless.
+        ref_ok = await loop.run_in_executor(
+            None, run_tests, task.reference, list(task.tests), task.setup
+        )
+        if not ref_ok.passed:
+            await emit(i, len(tasks), f"{task.task_id}: reference fails its own tests, skipped")
+            continue
+
+        muts = mutants(task.reference, limit=per_problem)
+        for m in muts:
+            out = await loop.run_in_executor(
+                None, run_tests, m.code, list(task.tests), task.setup
+            )
+            bucket = kinds.setdefault(m.kind, [0, 0])
+            bucket[0] += 1
+            if out.passed:
+                bucket[1] += 1
+                # Only survivors need a witness; a killed mutant is already decided.
+                w = await loop.run_in_executor(
+                    None, find_witness, task.reference, m.code, task.entry_point,
+                    task.tests, task.setup,
+                )
+                rows.append({
+                    "task_id": task.task_id, "kind": m.kind, "where": m.where,
+                    "entry_point": task.entry_point,
+                    "proven": w.found,
+                    "witness": ({"args": w.args, "ref": w.ref, "mut": w.mut} if w.found else None),
+                })
+            elif out.status in killed_how:
+                killed_how[out.status] += 1
+
+        if i % 5 == 0 or i == len(tasks):
+            surv = len(rows)
+            await emit(i, len(tasks), f"{i}/{len(tasks)} problems — {surv} survivors so far")
+
+    total = sum(v[0] for v in kinds.values())
+    survived = sum(v[1] for v in kinds.values())
+    proven = [r for r in rows if r["proven"]]
+    killed = total - survived
+
+    return {
+        "problems": len(tasks),
+        "mutants": total,
+        "survived": survived,
+        "survival_rate": survived / total if total else 0.0,
+        "proven": len(proven),
+        "proven_share_of_survivors": len(proven) / survived if survived else 0.0,
+        "proven_share_of_all": len(proven) / total if total else 0.0,
+        "killed_how": killed_how,
+        "caught_by_crash": (killed_how["error"] + killed_how["timeout"]) / killed if killed else 0.0,
+        "by_kind": {k: {"run": v[0], "survived": v[1], "rate": v[1] / v[0] if v[0] else 0.0}
+                    for k, v in sorted(kinds.items(), key=lambda kv: -kv[1][0])},
+        "witnesses": [r for r in proven][:14],
+    }
+
+
+ABOUT = """
+<p>Single-point mutation of every reference solution, scored against the benchmark's own
+three asserts, with a separating input hunted for each survivor.</p>
+<p><b>17.6%</b> of 5,116 mutants survive across the full split. <b>442</b> of them are
+provably wrong — an input exists on which they differ from the reference — which is 8.6% of
+all mutants. Per problem: <b>227 of 782 (29.0%)</b> accept at least one provably wrong
+program, and seven suites kill nothing at all.</p>
+<p>Off-by-one is what slips through. Comparison mutations (<code>&lt;</code> to
+<code>&lt;=</code>) survive 25.9% of the time and constant nudges 25.3%, against 3.9% for a
+negated condition. A swapped operator breaks the answer loudly enough for three examples to
+notice; a boundary moved by one does not.</p>
+<p>The sanitized split — 427 problems the authors hand-verified — scores 16.0%. Verification
+fixed the reference solutions and left the false accepts alone, because the limit is the
+number of asserts, not their quality.</p>
+"""
+
+app = create_app(
+    slug="false-accepts",
+    icon="🧫",
+    runner=runner,
+    fields=[
+        Field("limit", "Problems", default=60, min=5, max=400,
+              hint="MBPP problems to mutate; each runs its own tests many times"),
+        Field("per_problem", "Mutants per problem", default=8, min=1, max=16,
+              hint="single-point changes: comparisons, operators, constants, conditions"),
+    ],
+    result_template="result.html",
+    about=ABOUT,
+    templates_dir=HERE / "templates",
+)

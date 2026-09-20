@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}About · {{ theme.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>{{ theme.name }}</h2>
+  <div style="font-size:15px">{{ about | safe }}</div>
+</div>
+<div class="card">
+  <h2>How a run flows</h2>
+  <pre class="log" style="max-height:none">browser  ──POST /run──▶  FastAPI
+                          │
+                          ├─▶ Kafka  jobs.requested   (durable, partitioned by app)
+                          │            │
+                          │            ▼
+                          │        worker  ──▶ Ollama (8 requests in flight)
+                          │            │
+                          │            ├─▶ Redis  generation cache  (shared by all ten apps)
+                          │            ├─▶ Redis  job state + pub/sub
+                          │            └─▶ Kafka  jobs.completed    (replayable result log)
+                          ▼
+browser  ◀──SSE──────  Redis pub/sub</pre>
+  <p class="note">If Kafka is unreachable the job runs in-process instead. The run still
+  completes and the page still streams, but it is not replayable — the badge on the run
+  page says which path it took.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+<div class="card">
+  <h2>Wrong code the three asserts accepted</h2>
+
+  <div class="tiles" style="margin-bottom:20px">
+    <div class="tile"><div class="k">Mutants run</div><div class="v">{{ result.mutants }}</div></div>
+    <div class="tile">
+      <div class="k">Survived</div>
+      <div class="v bad">{{ '%.1f' % (result.survival_rate * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Provably wrong</div>
+      <div class="v bad">{{ result.proven }}</div>
+    </div>
+    <div class="tile">
+      <div class="k">Of all mutants</div>
+      <div class="v">{{ '%.1f' % (result.proven_share_of_all * 100) }}%</div>
+    </div>
+  </div>
+
+  <p class="note">
+    {{ result.proven }} of the {{ result.survived }} survivors have a <b>separating input</b> —
+    a value where the mutant and the reference return different things. Those are not
+    "possibly equivalent"; they are different programs the benchmark scored as correct.
+    The remaining {{ result.survived - result.proven }} are reported as unproven rather than
+    counted, because equivalent-mutant detection is undecidable.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Which mutations slip through</h2>
+  <table>
+    <thead><tr><th>Mutation</th><th class="num">Run</th><th class="num">Survived</th><th style="width:34%"></th></tr></thead>
+    <tbody>
+    {% for kind, k in result.by_kind.items() %}
+      <tr>
+        <td class="mono">{{ kind }}</td>
+        <td class="num">{{ k.run }}</td>
+        <td class="num">{{ '%.1f' % (k.rate * 100) }}%</td>
+        <td><div class="bar"><i style="width: {{ (k.rate * 100) | round(1) }}%"></i></div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="note">
+    A swapped operator changes the answer loudly and three examples usually notice. A
+    boundary moved by one changes the answer only <i>at</i> the boundary — and that is
+    exactly the input three hand-picked examples tend not to contain.
+  </p>
+</div>
+
+<div class="card">
+  <h2>How the caught ones were caught</h2>
+  <table>
+    <thead><tr><th>Outcome</th><th class="num">Count</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="mono good">fail</td><td class="num">{{ result.killed_how.fail }}</td>
+          <td class="muted">an assert failed — the suite working as written</td></tr>
+      <tr><td class="mono warn">error</td><td class="num">{{ result.killed_how.error }}</td>
+          <td class="muted">crashed: NameError, IndexError, ZeroDivisionError</td></tr>
+      <tr><td class="mono warn">timeout</td><td class="num">{{ result.killed_how.timeout }}</td>
+          <td class="muted">hung — a mutated loop bound</td></tr>
+    </tbody>
+  </table>
+  <p class="note">
+    <b>{{ '%.1f' % (result.caught_by_crash * 100) }}%</b> of the mutants that were caught
+    were caught by crashing or hanging rather than by failing a test. That still shows red,
+    but it is not the suite testing behaviour — the same mutation behind a guard clause
+    would have survived.
+  </p>
+</div>
+
+{% if result.witnesses %}
+<div class="card">
+  <h2>Separating inputs</h2>
+  <table>
+    <thead><tr><th>Task</th><th>Function</th><th>Input</th><th>Reference</th><th>Mutant</th></tr></thead>
+    <tbody>
+    {% for w in result.witnesses %}
+      <tr>
+        <td class="mono muted">{{ w.task_id }}</td>
+        <td class="mono">{{ w.entry_point }}</td>
+        <td class="mono" style="font-size:12px">{{ w.witness.args[:38] }}</td>
+        <td class="mono good" style="font-size:12px">{{ w.witness.ref[:26] }}</td>
+        <td class="mono bad" style="font-size:12px">{{ w.witness.mut[:26] }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

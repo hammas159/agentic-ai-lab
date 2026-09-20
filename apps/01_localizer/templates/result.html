@@ -1,0 +1,45 @@
+<div class="card">
+  <h2>Where each retriever thinks the fix goes</h2>
+
+  <div class="tiles" style="margin-bottom:18px">
+    <div class="tile"><div class="k">Candidates</div><div class="v">{{ result.candidates }}</div></div>
+    <div class="tile"><div class="k">Issue length</div><div class="v">{{ result.issue_chars }}</div></div>
+    <div class="tile">
+      <div class="k">Paths invented</div>
+      <div class="v {{ 'bad' if result.fabricated else 'good' }}">{{ result.fabricated }}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:34px">#</th>
+        <th>BM25 <span class="hint">lexical</span></th>
+        <th>Embeddings <span class="hint">dense</span></th>
+        <th>Hybrid <span class="hint">fused</span></th>
+        <th>Model <span class="hint">generative</span></th>
+        <th>Reranked <span class="hint">BM25 top-30</span></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for i in range(10) %}
+      <tr>
+        <td class="num muted">{{ i + 1 }}</td>
+        {% for arm in ['bm25', 'embeddings', 'hybrid', 'llm', 'llm_rerank'] %}
+          {% set paths = result.rankings.get(arm, []) %}
+          <td class="mono" style="font-size:12px">
+            {% if paths | length > i %}{{ paths[i] }}{% else %}<span class="muted">—</span>{% endif %}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="note">
+    Where the columns agree, the issue probably named the file and any retriever would do.
+    Where BM25 is empty or wrong and the model is not, the model is drawing on knowledge of
+    <b>{{ result.repo }}</b> rather than on the text you pasted — which is the whole
+    finding, and the reason the reranked column exists as a control.
+  </p>
+</div>
