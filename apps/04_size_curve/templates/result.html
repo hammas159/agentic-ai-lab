@@ -1,0 +1,60 @@
+<div class="card">
+  <h2>3B versus 14B on the same {{ result.n }} tasks</h2>
+
+  <div class="tiles" style="margin-bottom:22px">
+    <div class="tile"><div class="k">3B pass@1</div><div class="v">{{ '%.1f' % (result.small_pass * 100) }}%</div></div>
+    <div class="tile"><div class="k">14B pass@1</div><div class="v">{{ '%.1f' % (result.big_pass * 100) }}%</div></div>
+    <div class="tile"><div class="k">Gap</div><div class="v">{{ '%+.1f' % (result.gap * 100) }}%</div></div>
+    <div class="tile">
+      <div class="k">3B share of solvable</div>
+      <div class="v good">{{ '%.1f' % (result.small_share_of_solvable * 100) }}%</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Bucket</th><th class="num">Tasks</th><th class="num">Share</th><th style="width:38%"></th><th>What it means</th></tr></thead>
+    <tbody>
+      {% set labels = {
+        'both': 'the 14B bought nothing here',
+        'big_only': 'this is what the size is for',
+        'small_only': 'the 14B lost these',
+        'neither': 'size was not the problem'
+      } %}
+      {% for key in ['both', 'big_only', 'small_only', 'neither'] %}
+        {% set count = result.buckets[key] %}
+        {% set share = count / result.n if result.n else 0 %}
+        <tr>
+          <td class="mono">{{ key }}</td>
+          <td class="num">{{ count }}</td>
+          <td class="num">{{ '%.1f' % (share * 100) }}%</td>
+          <td><div class="bar {{ 'alt' if key in ['small_only','neither'] else '' }}">
+            <i style="width: {{ (share * 100) | round(1) }}%"></i></div></td>
+          <td class="muted" style="font-size:12.5px">{{ labels[key] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="note">
+    Of the <b>{{ result.solvable }}</b> tasks either size can solve, the 3B already handles
+    <b>{{ '%.1f' % (result.small_share_of_solvable * 100) }}%</b>. The 14B's entire advantage
+    is <b>{{ result.buckets.big_only }}</b> tasks — and it loses
+    <b>{{ result.buckets.small_only }}</b> the small model gets right, which is the floor
+    under how much of the gap is capability rather than variance.
+  </p>
+</div>
+
+{% if result.bucket_ids.big_only %}
+<div class="card">
+  <h2>Tasks only the 14B solved</h2>
+  <p class="mono" style="font-size:12.5px; line-height:2">
+    {% for t in result.bucket_ids.big_only %}<span class="chip">{{ t }}</span> {% endfor %}
+  </p>
+  {% if result.bucket_ids.small_only %}
+  <h2 style="margin-top:20px">Tasks only the 3B solved</h2>
+  <p class="mono" style="font-size:12.5px; line-height:2">
+    {% for t in result.bucket_ids.small_only %}<span class="chip">{{ t }}</span> {% endfor %}
+  </p>
+  {% endif %}
+</div>
+{% endif %}

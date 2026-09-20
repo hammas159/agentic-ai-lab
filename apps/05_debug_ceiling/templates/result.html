@@ -1,0 +1,70 @@
+<div class="card">
+  <h2>Where the self-debug loop stops helping</h2>
+
+  <div class="tiles" style="margin-bottom:22px">
+    <div class="tile"><div class="k">Final pass@1</div><div class="v">{{ '%.1f' % (result.final_pass * 100) }}%</div></div>
+    <div class="tile"><div class="k">Tasks solved</div><div class="v">{{ result.total_solved }} / {{ result.n }}</div></div>
+    <div class="tile">
+      <div class="k">Rounds 1–2 share</div>
+      <div class="v good">{{ '%.0f' % (result.first_two_share * 100) }}%</div>
+    </div>
+    <div class="tile">
+      <div class="k">Rounds 3+ added</div>
+      <div class="v {{ 'bad' if result.beyond_two == 0 else '' }}">{{ result.beyond_two }}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Round</th><th class="num">Newly solved</th><th class="num">Cumulative</th><th style="width:40%"></th></tr></thead>
+    <tbody>
+    {% for i in range(result.rounds) %}
+      {% set newly = result.per_round[i] %}
+      {% set share = (newly / result.total_solved) if result.total_solved else 0 %}
+      <tr>
+        <td class="mono">{{ i + 1 }}</td>
+        <td class="num {{ 'muted' if newly == 0 else '' }}">{{ '+%d' % newly if newly else '—' }}</td>
+        <td class="num">{{ '%.1f' % (result.cumulative[i] * 100) }}%</td>
+        <td><div class="bar"><i style="width: {{ (share * 100) | round(1) }}%"></i></div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if result.beyond_two == 0 %}
+  <p class="note">
+    <b>Rounds 3 onward added nothing.</b> Every task this loop was ever going to solve was
+    solved in the first two rounds, and the remaining
+    {{ '%.0f' % (result.wasted_compute_share * 100) }}% of the compute bought zero tasks.
+    An agent looping five times on test feedback is paying five times the tokens for the
+    value of two.
+  </p>
+  {% else %}
+  <p class="note">
+    Rounds 1–2 captured {{ '%.0f' % (result.first_two_share * 100) }}% of the total gain;
+    rounds 3+ added {{ result.beyond_two }} more for
+    {{ '%.0f' % (result.wasted_compute_share * 100) }}% of the compute.
+  </p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>The graph that ran</h2>
+  <pre class="log" style="max-height:none">   ┌──────────┐
+   │ generate │  seed=1
+   └────┬─────┘
+        ▼
+   ┌─────────┐        solved or out of rounds
+   │ execute │ ──────────────────────────────▶ END
+   └────┬────┘
+        │ failed
+        ▼
+   ┌────────┐
+   │ repair │  seed = round, plus the assertion text
+   └────┬───┘
+        └──────────▶ execute</pre>
+  <p class="note">
+    The conditional edge reads a real test outcome, not a model's judgement of its own work.
+    The seed changes per round because a retry at temperature 0 with an unchanged seed is
+    the same greedy decode returning the same wrong answer.
+  </p>
+</div>
