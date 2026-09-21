@@ -27,7 +27,7 @@ python scripts/screenshots.py   # real captures of the running console
 Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
 which is a real intake → drain → approve cycle. None of those figures were typed by hand.
 
-**715 tests, all passing, zero skipped.** Every product reads a real dataset; the
+**719 tests, all passing, zero skipped.** Every product reads a real dataset; the
 contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
 committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
 OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and seventeen RFCs.
@@ -65,7 +65,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 | [14](14_graph-clinic) | **graph-clinic** | all 7,405 HotpotQA questions | Graph wins **4.5x** on bridge questions and finds **1 in 1,000** comparison ones |
 | [15](15_claims-floor) | **claims-floor** | 6,000 eCFR versions, 6 regulators | Returning the current text is wrong **49%** of the time, by a median of **2.5 years** |
 | [16](16_shelf-ops) | **shelf-ops** | 4,501 real products | Compounding two in-policy discounts breaks **one product in five** |
-| [17](17_fleet-desk) | **fleet-desk** | TSPLIB berlin52 + proven optimum | "Go round the city in a circle" is **92% worse than optimal** |
+| [17](17_fleet-desk) | **fleet-desk** | 6 TSPLIB instances + proven optima | "Go round the city in a circle" is **92% worse at 52 stops, 181% at 150** |
 | [18](18_campus-ops) | **campus-ops** | 5,571 scheduled events | A room-only checker misses the **9 overlaps that are physically impossible** |
 | [19](19_agri-desk) | **agri-desk** | all 898 NCBI GenBank genomes, 23 countries | **422 emerging variants become 2**; false-alarm rate **0.9954** — and the 2 are real |
 | [20](20_driftwatch) | **driftwatch** | 35 real repositories | **1.64%** of README sentences are machine-settleable; 9.1% of those are false |
@@ -101,11 +101,11 @@ overturned four, and the READMEs say so rather than quietly reframing:
   headline an order of magnitude too high — and left it drifting 18% when a dataset was
   committed.
 
-### The one lesson that recurred across five products
+### The one lesson that recurred across six products
 
 Every product here was first measured on a subset, because a subset was what finished
-quickly. Four of the five subsets were lying, and only some of them in a predictable
-direction:
+quickly or was already downloaded. Five of the six subsets were lying, and only some of them
+in a predictable direction:
 
 | Product | Sampled | Whole corpus | Moved |
 |---|---:|---:|---|
@@ -113,6 +113,7 @@ direction:
 | **revenue-desk** | 0.024% reverts (12 repos) | **0.122%** (35) | 5x undercount |
 | **claims-floor** | 0.28 yr median error (1 title) | **2.47 yr** (6) | understated 9x |
 | **agri-desk** | 10 → 0, rate 1.000 (60 genomes) | **422 → 2**, 0.9954 (898) | unfalsifiable |
+| **fleet-desk** | sweep +92% (1 TSPLIB instance) | **+54% to +181%** (6) | hid a trend |
 | **graph-clinic** | 0.734 bridge (3,000 questions) | **0.753** (7,405) | honest |
 
 Only one of the five sampled honestly, and the failures were three different kinds:
@@ -139,6 +140,12 @@ of six. Its *rate* generalised fine — 52.2% against a pooled 49.1% — but its
 staleness, 0.28 years, was a tenth of every other regulator's, and the README had already
 explained that away as "most amendments are recent". One regulator is one drafting culture;
 the number was about OSHA, not about versioned documents.
+
+**One point cannot show a slope.** fleet-desk measured a single 52-stop routing instance and
+reported the circular route as 92% worse than optimal. Across six instances the excess rises
+with the number of stops — 54% at 51, 181% at 150 — so the single number was not merely
+imprecise, it concealed the shape of the answer. A fleet product's interesting case is the
+large one, and 52 stops is the smallest fleet anyone would buy software for.
 
 agri-desk is the worst case and did not look like one. Its small corpus produced a
 false-alarm rate of exactly **1.000**, which reads as the strongest possible result and is

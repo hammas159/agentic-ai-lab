@@ -1,7 +1,9 @@
 """fleet-desk against a routing instance with a proven optimal answer.
 
-`products/data/berlin52.tsp` is TSPLIB's berlin52 — 52 real locations in Berlin,
-the standard benchmark — and `berlin52.opt.tour` is its proven optimal tour.
+Six TSPLIB instances with their proven optimal tours — eil51, berlin52, st70,
+pr76, kroA100 and ch150, 51 to 150 stops. berlin52 is the one the headline
+figures below are quoted on; the other five are what show that the headline is
+not a constant.
 
 That pairing is what turns "do not let a model plan a route" from an assertion
 into a number. Every figure asserted here was produced by running this code over
@@ -16,10 +18,12 @@ from fleetdesk.domain import Comparison, cost
 from fleetdesk.tsplib import (
     INSTANCE,
     OPTIMAL,
+    PUBLISHED,
     by_index,
     cities,
     euc_2d,
     excess,
+    instance,
     matrix,
     nearest_neighbour,
     optimal_tour,
@@ -79,6 +83,65 @@ def test_and_the_greedy_result_depends_on_where_it_starts():
     assert statistics.median(lengths) == pytest.approx(9_297, abs=5)
     # A 26% spread from the starting stop alone, with the algorithm unchanged.
     assert max(lengths) / min(lengths) > 1.25
+
+
+def test_every_published_optimum_is_reproduced_from_the_coordinates():
+    # Six independent checks on the EUC_2D rounding rule. One instance agreeing
+    # could be luck; six, across 51 to 150 stops and four orders of magnitude of
+    # tour length, is the rule being implemented correctly.
+    for name, published in PUBLISHED.items():
+        inst, opt = instance(name)
+        assert tour_length(list(optimal_tour(opt)), inst) == published, name
+
+
+def test_the_circle_gets_worse_as_the_fleet_grows():
+    # THE FINDING, properly. berlin52's 92% is mid-range and not the headline:
+    # the sweep's excess RISES with the number of stops, from 54% at 51 to 181%
+    # at 150. A single instance cannot show that, and a fleet product whose
+    # instance has 52 stops is the least interesting case it will ever see.
+    excesses = {}
+    for name in PUBLISHED:
+        inst, opt = instance(name)
+        best = tour_length(list(optimal_tour(opt)), inst)
+        excesses[name] = tour_length(sweep(inst), inst) / best - 1
+
+    assert excesses["eil51"] == pytest.approx(0.540, abs=0.01)
+    assert excesses["ch150"] == pytest.approx(1.814, abs=0.01)
+    assert min(excesses.values()) > 0.5  # never close to acceptable
+    # The two largest instances are the two worst.
+    worst = sorted(excesses, key=excesses.get)[-2:]
+    assert set(worst) == {"kroA100", "ch150"}
+
+
+def test_nearest_neighbour_degrades_too_but_far_less():
+    excesses = {}
+    for name in PUBLISHED:
+        inst, opt = instance(name)
+        best = tour_length(list(optimal_tour(opt)), inst)
+        excesses[name] = tour_length(nearest_neighbour(1, inst), inst) / best - 1
+    assert min(excesses.values()) == pytest.approx(0.191, abs=0.01)
+    assert max(excesses.values()) == pytest.approx(0.419, abs=0.01)
+    # A real heuristic stays within half of optimal where the circle doubles it.
+    assert max(excesses.values()) < 0.5
+
+
+def test_visiting_in_listed_order_measures_the_file_not_the_method():
+    # A caution about the weakest baseline. "Listed order" ranges from 39% worse
+    # to 699% worse across these six, because TSPLIB files are not shuffled —
+    # pr76's points happen to be written in a spatially coherent order, so there
+    # the naive ordering BEATS the circular sweep. A benchmark built on listed
+    # order is measuring how the file was written.
+    excesses = {}
+    for name in PUBLISHED:
+        inst, opt = instance(name)
+        best = tour_length(list(optimal_tour(opt)), inst)
+        excesses[name] = tour_length(by_index(inst), inst) / best - 1
+    assert excesses["pr76"] == pytest.approx(0.394, abs=0.01)
+    assert excesses["kroA100"] == pytest.approx(7.993, abs=0.02)
+    assert max(excesses.values()) / min(excesses.values()) > 15
+
+    pr76, _ = instance("pr76")
+    assert tour_length(by_index(pr76), pr76) < tour_length(sweep(pr76), pr76)
 
 
 def test_the_product_costs_a_route_on_the_same_matrix():

@@ -1,16 +1,22 @@
-"""A real routing instance with a known optimal answer.
+"""Real routing instances with known optimal answers.
 
-`products/data/berlin52.tsp` is TSPLIB's berlin52: 52 real locations in Berlin,
-the standard benchmark instance. `berlin52.opt.tour` is its proven optimal tour.
+Six TSPLIB instances, each committed with its proven optimal tour: eil51,
+berlin52, st70, pr76, kroA100 and ch150 — 51 to 150 stops.
 
 That combination is what makes this product's claim testable rather than
 rhetorical. "Do not let a model plan a route" is an assertion; *how much worse
 than optimal* a plausible-looking route is, on real coordinates against a proven
 answer, is a number.
 
+Six rather than one for two reasons. The excess is not a constant — a circular
+sweep is 54% worse than optimal at 51 stops and 181% worse at 150, so a single
+instance cannot say whether the number grows with the fleet. And six independent
+published optima are six independent checks on the EUC_2D rounding rule below;
+one instance agreeing could be luck.
+
 Distances follow TSPLIB's EUC_2D rule, which rounds to the nearest integer. Using
-raw floats instead produces a tour length that disagrees with every published
-figure for this instance by a few units, which looks like a bug in the solver.
+raw floats instead produces tour lengths that disagree with every published
+figure by a few units, which looks like a bug in the solver.
 """
 
 from __future__ import annotations
@@ -23,6 +29,24 @@ from pathlib import Path
 DATA = Path(__file__).resolve().parents[3] / "data"
 INSTANCE = DATA / "berlin52.tsp"
 OPTIMAL = DATA / "berlin52.opt.tour"
+
+# Instance -> its published optimal tour length. These are the numbers TSPLIB
+# publishes; `tour_length(optimal_tour())` must reproduce each one exactly.
+PUBLISHED = {
+    "eil51": 426,
+    "berlin52": 7_542,
+    "st70": 675,
+    "pr76": 108_159,
+    "kroA100": 21_282,
+    "ch150": 6_528,
+}
+
+
+def instance(name: str) -> tuple[str, str]:
+    """Paths to an instance and its optimal tour, by TSPLIB name."""
+    if name not in PUBLISHED:
+        raise InstanceMissingError(f"{name} is not one of {sorted(PUBLISHED)}")
+    return str(DATA / f"{name}.tsp"), str(DATA / f"{name}.opt.tour")
 
 
 class InstanceMissingError(FileNotFoundError):
@@ -41,11 +65,11 @@ def euc_2d(a: City, b: City) -> int:
     return int(round(math.hypot(a.x - b.x, a.y - b.y)))
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=16)
 def cities(path: str | None = None) -> tuple[City, ...]:
     target = Path(path) if path else INSTANCE
     if not target.exists():
-        raise InstanceMissingError(f"{target} is missing. Fetch TSPLIB's berlin52.")
+        raise InstanceMissingError(f"{target} is missing. Fetch it from TSPLIB.")
     out: list[City] = []
     reading = False
     for line in target.read_text(encoding="utf-8").splitlines():
@@ -66,12 +90,12 @@ def cities(path: str | None = None) -> tuple[City, ...]:
     return tuple(out)
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=16)
 def optimal_tour(path: str | None = None) -> tuple[int, ...]:
     """The proven optimal ordering, as city ids."""
     target = Path(path) if path else OPTIMAL
     if not target.exists():
-        raise InstanceMissingError(f"{target} is missing. Fetch TSPLIB's berlin52 optimum.")
+        raise InstanceMissingError(f"{target} is missing. Fetch its TSPLIB optimum.")
     out: list[int] = []
     reading = False
     for line in target.read_text(encoding="utf-8").splitlines():

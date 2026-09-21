@@ -8,8 +8,9 @@ serves the shared operator console at `/`.
 
 ## The finding
 
-**Measured on TSPLIB berlin52** — 52 real locations in Berlin, the standard routing
-benchmark, against its **proven optimal tour**.
+**Measured on six TSPLIB instances**, 51 to 150 stops, each against its **proven optimal
+tour**. The headline table is berlin52 — 52 real locations in Berlin, the standard routing
+benchmark — and the section below it is why one instance was not enough.
 
 | Route | Length | Excess over optimal |
 |---|---:|---:|
@@ -39,17 +40,46 @@ So the model narrates exceptions and writes to drivers, and the solver plans. An
 route — whatever produced it — is scored on the same matrix, which is what `compare()` is
 for.
 
-### What proves the arithmetic
+### 92% is not the number. It is one instance's number.
 
-The optimal tour length computed here from raw coordinates is **7,542**, which is berlin52's
-published optimum exactly. That match is the test that the EUC_2D rounding rule is right:
-using unrounded distances gives a number close enough to look correct and wrong enough to
-disagree with every published figure for this instance.
+berlin52 has 52 stops, which is the smallest fleet anybody would build software for. Across
+six TSPLIB instances with proven optima, **the circle gets worse as the fleet grows**:
+
+| Instance | Stops | Optimal | Angular sweep | Nearest neighbour | Listed order |
+|---|---:|---:|---:|---:|---:|
+| eil51 | 51 | 426 | **+54.0%** | +20.0% | +207.0% |
+| berlin52 | 52 | 7,542 | **+92.2%** | +19.1% | +194.4% |
+| st70 | 70 | 675 | **+68.0%** | +23.0% | +405.2% |
+| pr76 | 76 | 108,159 | **+72.0%** | +41.9% | +39.4% |
+| kroA100 | 100 | 21,282 | **+137.5%** | +30.7% | +799.3% |
+| ch150 | 150 | 6,528 | **+181.4%** | +25.5% | +709.0% |
+
+**At 150 stops the circular route is nearly three times the optimal distance.** A product
+that quoted berlin52's 92% would be quoting its most flattering case. The greedy heuristic
+degrades far more gently — 19% to 42% — which is the actual argument for a solver: not that
+the plausible idea is bad once, but that it falls apart exactly as the problem gets big
+enough to matter.
+
+### Two things the six instances showed that one could not
+
+**"Listed order" is not a baseline, it is a property of the file.** It ranges from +39% to
++799%, because TSPLIB instances are not shuffled — `pr76`'s points happen to be written in a
+spatially coherent order, so there the naive ordering *beats* the circular sweep. Any
+benchmark built on "the order the model read them in" is measuring how the input file was
+written. That is why the sweep, not the listed order, is the comparison this README leads
+with.
+
+**The arithmetic is right, six times over.** The optimal tour length computed from raw
+coordinates reproduces the published optimum **exactly for all six** — 426, 7,542, 675,
+108,159, 21,282 and 6,528, across four orders of magnitude. That is the test that the EUC_2D
+rounding rule is implemented correctly: unrounded distances give numbers close enough to
+look correct and wrong enough to disagree with every published figure. One instance agreeing
+could be luck; six cannot.
 
 Reproduce it:
 
 ```bash
-cd 17_fleet-desk && python -m pytest tests/test_real_routing.py -q     # 10 passed
+cd 17_fleet-desk && python -m pytest tests/test_real_routing.py -q     # 14 passed
 ```
 
 ## Agents and write authority
@@ -104,7 +134,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 17_fleet-desk
-python -m pytest -q                      # 18 passed
+python -m pytest -q                      # 32 passed
 PYTHONPATH="src;../platform/src" python -m fleetdesk.app    # console on http://127.0.0.1:8000
 ```
 
