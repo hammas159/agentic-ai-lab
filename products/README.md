@@ -27,7 +27,7 @@ python scripts/screenshots.py   # real captures of the running console
 Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
 which is a real intake → drain → approve cycle. None of those figures were typed by hand.
 
-**719 tests, all passing, zero skipped.** Every product reads a real dataset; the
+**729 tests, all passing, zero skipped.** Every product reads a real dataset; the
 contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
 committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
 OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and seventeen RFCs.
@@ -58,7 +58,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 | [07](07_hire-desk) | **hire-desk** | 5,882 real conversation turns | After redacting 1,971 names, **"Mel" survives 59 times** |
 | [08](08_bid-desk) | **bid-desk** | 4,036 RFC 2119 requirements, 17 RFCs | Recall is **1.000**; precision **0.827** — the asymmetry runs the other way |
 | [09](09_hermes-home) | **hermes-home** | LoCoMo, 1,982 questions | Median answer lives **14 sessions back**; an 8-session window answers **28%** |
-| [10](10_kyc-floor) | **kyc-floor** | OFAC, 8,650 labelled aliases | Consonant skeletons buy **+19.8 points of recall for zero precision cost** |
+| [10](10_kyc-floor) | **kyc-floor** | OFAC 8,650 + UN 2,163 labelled aliases | Skeletons buy **+19.8 points for zero precision cost** — and **+18.6 on a second list** |
 | [11](11_watchtower) | **watchtower** | 30,552 OSV advisories | "Below the highest fix" is wrong **15.4%** of the time, false alarms **11:1** |
 | [12](12_powerguard) | **powerguard** | this machine, 392 processes | **3 of 3** expensive jobs are another session's; it plans **0** actions against them |
 | [13](13_swarm-lab) | **swarm-lab** | N workers on real Redis | Uncoordinated waste is exactly **1 - 1/N**; 95% at N=21 |
@@ -83,6 +83,25 @@ overturned four, and the READMEs say so rather than quietly reframing:
   half to one on the bridge questions and finds one comparison pair in a thousand.
 - **one-desk** predicted the four platform variants would be near-identical. They are — and
   the human baseline needed to *prove* it was the part that was actually hard.
+
+### Two headline numbers checked against a second, independent source
+
+A number measured on one corpus is a fact about that corpus until something else agrees:
+
+- **kyc-floor** built every figure on OFAC, then ran the same code over the UN Security
+  Council list. Over *all* labelled pairs the two disagree by six points; over the pairs a
+  spelling rule could reach they agree to within 1.2. The denominator was the whole
+  disagreement — OFAC leaves 12% of its aliases unreachable by any spelling rule and the UN
+  41%, which is a fact about what each body publishes, not about the matcher. The UN also
+  grades its aliases, and 74% of the ones it marks doubtful are unreachable against 27% of
+  the confident ones, which confirms by the publisher's own judgement what this product had
+  only argued.
+- **claims-floor** did the same across six CFR titles and found its rate held and its
+  severity did not.
+
+Both also found what does *not* transfer: kyc-floor's screening threshold costs 1.74% false
+positives on OFAC and 7.5% on the UN, so the ranking of rules is portable and the cut-off
+is not.
 
 ### Four found real bugs by being run
 

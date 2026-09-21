@@ -38,10 +38,55 @@ the recall number, is what picks the threshold.
 that fraction is a ceiling on string matching rather than a defect, and it is why the
 "recall, all pairs" column can never reach 1.0.
 
+## Checked against a second sanctions body
+
+Every number above came off one list. A matching rule tuned on one authority's
+transliteration habits is a rule about that authority — so the same code was run over the
+**UN Security Council consolidated list**: 736 individuals, 2,163 graded alias pairs, a
+different listing process and a different mix of regions.
+
+| | OFAC | UN | |
+|---|---:|---:|---|
+| Recall over **all** labelled pairs, strict → skeletons | 27.8% → 44.9% | 14.7% → 25.7% | **+17.1 vs +11.0** |
+| Recall over **reachable** pairs, strict → skeletons | 33.4% → 53.2% | 24.9% → 43.4% | **+19.8 vs +18.6** |
+| Pairs no spelling rule can reach | 12.1% | **40.9%** | |
+| False positives, skeletons, per 20,000 | 1 | 1 | |
+
+**Measured over all pairs the two lists disagree by six points; measured over the pairs a
+spelling rule could reach, they agree to within 1.2.** The disagreement was never about the
+matcher. It was the denominator: a recall figure over all labels is partly a measurement of
+how many unreachable labels the publisher happens to include, and the UN publishes far more
+noms de guerre and single-word aliases than OFAC does. **That is a fact about the list, and
+quoting it as a property of the matcher would have been wrong in both directions.**
+
+### The UN can settle something OFAC cannot
+
+OFAC publishes aliases ungraded. The UN marks each one `Good` or `Low`, where `Low` means
+the UN itself is unsure the alias belongs to that person.
+
+| Alias quality | n | Unreachable by any spelling rule |
+|---|---:|---:|
+| `Good` | 1,535 | 27.2% |
+| **`Low`** | 628 | **74.4%** |
+
+**Three quarters of the doubtful aliases are unreachable, against a quarter of the confident
+ones.** The "unmatchable ceiling" this README has always claimed is a property of the labels
+turns out to be exactly that, confirmed by the publisher's own confidence grade rather than
+by argument.
+
+### What did not transfer
+
+The *ranking* of the rules is identical on both lists. The *thresholds* are not: "one name
+part in common" costs 1.74% false positives on OFAC and **7.5% on the UN**, four times as
+many, because these names are shorter and share common particles more often. A screening
+threshold tuned on one list and shipped against another is a different product.
+
+
 Reproduce it:
 
 ```bash
 cd 10_kyc-floor && python -m pytest tests/test_real_sanctions.py -q     # 12 passed
+cd 10_kyc-floor && python -m pytest tests/test_real_un.py -q            # 10 passed
 ```
 
 ### Two things that had to be fixed to get here
@@ -106,7 +151,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 10_kyc-floor
-python -m pytest -q                      # 18 passed
+python -m pytest -q                      # 39 passed
 PYTHONPATH="src;../platform/src" python -m kycfloor.app    # console on http://127.0.0.1:8000
 ```
 
