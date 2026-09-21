@@ -42,37 +42,72 @@ def test_the_whole_portfolio_is_read(surveyed):
     assert all(s.commits > 0 for s in surveyed)
 
 
-def test_capping_the_repositories_could_only_undercount():
-    # A revert is a PAIR of edits drawn from the history pool, so shrinking the
-    # pool shrinks the pairs superlinearly. The old default stopped at 12
-    # repositories, alphabetically, and reported a rate far below the truth.
+def test_taking_the_first_twelve_alphabetically_is_not_a_sample():
+    # The old default stopped at 12 repositories in name order. That is not a
+    # sample of anything: it reported 0.0237% against 0.1222% over all 35, a
+    # fivefold undercount, because the repositories with the most regenerated
+    # result files — mcp-lab and nlp-lab, 1,343 reverts between them — happen to
+    # sort after the twelfth.
+    #
+    # Note which number that bias moves. The AUTHORED rate goes the other way:
+    # 24 of the 27 hand-written reverts are in those first twelve, so the subset
+    # slightly OVERstates it. A convenience cut has no reliable direction, which
+    # is the argument against reasoning about its bias instead of removing it.
     twelve = survey(repos=12)
-    assert len(twelve) == 12
-    partial = sum(len(s.reverts) for s in twelve) / sum(s.edits for s in twelve)
     everything = survey()
-    full = sum(len(s.reverts) for s in everything) / sum(s.edits for s in everything)
-    assert partial < full
+    assert len(twelve) == 12
+
+    naive_part = sum(len(s.reverts) for s in twelve) / sum(s.edits for s in twelve)
+    naive_full = sum(len(s.reverts) for s in everything) / sum(s.edits for s in everything)
+    assert naive_part < naive_full / 4
+
+    authored_part = sum(len(s.authored_reverts) for s in twelve) / sum(
+        s.authored_edits for s in twelve
+    )
+    authored_full = sum(len(s.authored_reverts) for s in everything) / sum(
+        s.authored_edits for s in everything
+    )
+    assert authored_part > authored_full
 
 
-def test_generated_files_are_half_the_edits_and_nearly_all_the_reverts(surveyed):
+def test_generated_files_are_most_of_the_edits_and_nearly_all_the_reverts(surveyed):
     # THE FINDING. Committed datasets and regenerated `results.json` files are
-    # 55% of every line edit in the portfolio — and 97% of every revert.
+    # most of every line edit in the portfolio — and 97% of every revert.
+    #
+    # The edit share is deliberately a wide band. It is not a constant: it moves
+    # whenever anyone commits a dataset, and it did, mid-measurement — see
+    # test_the_honest_rate_survives_a_dataset_commit. The *revert* share is the
+    # stable half, and the asymmetry between them is the whole point: generated
+    # files dominate the numerator far more than the denominator, so leaving
+    # them in multiplies the answer.
     edits, reverts, authored_edits, authored_reverts = totals(surveyed)
     generated_edits = (edits - authored_edits) / edits
     generated_reverts = (reverts - authored_reverts) / reverts
-    assert generated_edits == pytest.approx(0.548, abs=0.05)
+    assert 0.5 < generated_edits < 0.8
     assert generated_reverts == pytest.approx(0.969, abs=0.03)
-    # The asymmetry is the whole point: they dominate the numerator far more
-    # than the denominator, so leaving them in multiplies the answer.
-    assert generated_reverts > generated_edits * 1.7
+    assert generated_reverts > generated_edits * 1.4
+
+
+def test_the_honest_rate_survives_a_dataset_commit(surveyed):
+    # Committing one 7.5 MB GenBank corpus to this repository added ~127,000
+    # line edits. The naive rate fell from 0.1489% to 0.1222% — an 18% swing
+    # caused by no change in how anybody edits anything. The authored rate did
+    # not move: 27 reverts in ~264,000 hand-written edits, before and after.
+    #
+    # That is the argument for the distinction, made by accident and kept.
+    _, _, authored_edits, authored_reverts = totals(surveyed)
+    assert authored_reverts == 27
+    assert 260_000 < authored_edits < 275_000
+    assert authored_reverts / authored_edits == pytest.approx(0.000102, abs=0.00001)
 
 
 def test_the_rate_a_person_actually_produces(surveyed):
-    # 27 reverts in 263,631 hand-written line edits: one in nine thousand. Git
+    # 27 reverts in ~264,000 hand-written line edits: one in nine thousand. Git
     # has diffs, atomic commits and review, and this is the floor such a medium
-    # achieves. The naive number over the same history is 0.149% — 14.5x higher.
+    # achieves. The naive number over the same history is an order of magnitude
+    # higher, and unlike this one it drifts with whatever was committed.
     edits, reverts, authored_edits, authored_reverts = totals(surveyed)
-    assert authored_reverts / authored_edits == pytest.approx(0.000102, abs=0.00005)
+    assert authored_reverts / authored_edits == pytest.approx(0.000102, abs=0.00001)
     assert (reverts / edits) / (authored_reverts / authored_edits) > 8
 
 

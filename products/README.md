@@ -15,7 +15,7 @@ data — is in its own README and in [`../../PRODUCT-PLAN.md`](../../PRODUCT-PLA
 ```
 python -m venv .venv && .venv/Scripts/pip install -e platform[api,infra] pytest ruff
 cd platform        && python -m pytest -q     # 132 passed
-cd 01_revenue-desk && python -m pytest -q     #  29 passed
+cd 01_revenue-desk && python -m pytest -q     #  34 passed
 
 python scripts/capture.py       # runs all 20 for real, writes scripts/runs.json
 python scripts/smoke_serve.py   # boots all 20 on uvicorn, writes scripts/served.json
@@ -27,7 +27,7 @@ python scripts/screenshots.py   # real captures of the running console
 Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
 which is a real intake → drain → approve cycle. None of those figures were typed by hand.
 
-**711 tests, all passing, zero skipped.** Every product reads a real dataset; the
+**715 tests, all passing, zero skipped.** Every product reads a real dataset; the
 contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
 committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
 OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and seventeen RFCs.
@@ -49,7 +49,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 
 | # | Product | Real data | What it measured |
 |---|---|---|---|
-| [01](01_revenue-desk) | **revenue-desk** | 583,531 line edits, all 35 git repos | Generated files are 55% of edits and **97% of reverts**; the honest rate is **14.5x** lower |
+| [01](01_revenue-desk) | **revenue-desk** | 711,082 line edits, all 35 git repos | Generated files are **97% of reverts**; the honest rate is 12x lower and doesn't drift |
 | [02](02_ward-sync) | **ward-sync** | 3,850 Synthea prescriptions | **93% of prescriptions end**; a "current list" is **5.5x too long** for 104 of 105 patients |
 | [03](03_one-desk) | **one-desk** | 300 AMI participant summaries | Two people describing one meeting overlap at **0.23**; a per-platform rewrite at **0.79** |
 | [04](04_ledger-brain) | **ledger-brain** | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
@@ -63,7 +63,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 | [12](12_powerguard) | **powerguard** | this machine, 392 processes | **3 of 3** expensive jobs are another session's; it plans **0** actions against them |
 | [13](13_swarm-lab) | **swarm-lab** | N workers on real Redis | Uncoordinated waste is exactly **1 - 1/N**; 95% at N=21 |
 | [14](14_graph-clinic) | **graph-clinic** | all 7,405 HotpotQA questions | Graph wins **4.5x** on bridge questions and finds **1 in 1,000** comparison ones |
-| [15](15_claims-floor) | **claims-floor** | 1,000 eCFR section versions | Returning the current text is wrong **52%** of the time, by up to **9.6 years** |
+| [15](15_claims-floor) | **claims-floor** | 6,000 eCFR versions, 6 regulators | Returning the current text is wrong **49%** of the time, by a median of **2.5 years** |
 | [16](16_shelf-ops) | **shelf-ops** | 4,501 real products | Compounding two in-policy discounts breaks **one product in five** |
 | [17](17_fleet-desk) | **fleet-desk** | TSPLIB berlin52 + proven optimum | "Go round the city in a circle" is **92% worse than optimal** |
 | [18](18_campus-ops) | **campus-ops** | 5,571 scheduled events | A room-only checker misses the **9 overlaps that are physically impossible** |
@@ -98,36 +98,58 @@ overturned four, and the READMEs say so rather than quietly reframing:
   dependencies while `pyproject.toml` declares thirteen.
 - **revenue-desk** counted committed datasets and regenerated `results.json` files as human
   edits, and read a line moved within a single commit as a revert. Together those made its
-  headline 14.5x too high.
+  headline an order of magnitude too high — and left it drifting 18% when a dataset was
+  committed.
 
-### The one lesson that recurred across four products
+### The one lesson that recurred across five products
 
 Every product here was first measured on a subset, because a subset was what finished
-quickly. Four of those subsets were lying, and the direction was predictable each time:
+quickly. Four of the five subsets were lying, and only some of them in a predictable
+direction:
 
 | Product | Sampled | Whole corpus | Moved |
 |---|---:|---:|---|
 | **comms-desk** | 62% wrong merges (12 meetings) | **87%** (139) | undercounted |
-| **revenue-desk** | 0.063% reverts (12 repos) | **0.285%** (35) | undercounted |
+| **revenue-desk** | 0.024% reverts (12 repos) | **0.122%** (35) | 5x undercount |
+| **claims-floor** | 0.28 yr median error (1 title) | **2.47 yr** (6) | understated 9x |
 | **agri-desk** | 10 → 0, rate 1.000 (60 genomes) | **422 → 2**, 0.9954 (898) | unfalsifiable |
 | **graph-clinic** | 0.734 bridge (3,000 questions) | **0.753** (7,405) | honest |
 
-The rule that separates them: **a per-item rate samples honestly, and a count of
-interactions between items does not.** graph-clinic scores each question independently, so
-3,000 estimated 7,405 to within two points. The other three count *pairs* — duplicate
-merges, revert pairs, a variant seen at two sites — and a sample shrinks the pool those
-pairs are drawn from, so it can only undercount. A sampled pair-count is a floor, never an
-estimate.
+Only one of the five sampled honestly, and the failures were three different kinds:
+
+**A per-item rate survives sampling.** graph-clinic scores each question on its own, so
+3,000 questions estimated 7,405 to within two points. Nothing about the measurement depends
+on which other questions are in the set.
+
+**A count of interactions between items does not.** comms-desk and agri-desk count *pairs* —
+two speakers merged, one variant seen at two sites. A sample shrinks the pool those pairs
+are drawn from, so it can only undercount. **A sampled pair-count is a floor, never an
+estimate**, and the error has a direction, which is worse than noise: it reads as
+conservative while being flattering.
+
+**A convenience cut is not a sample at all, and has no reliable direction.** revenue-desk
+took the first 12 repositories in *name order*. That undercounted the naive rate fivefold,
+because the two repositories with the most regenerated result files sort late in the
+alphabet — but it slightly *overstated* the authored rate, because 24 of the 27 hand-written
+reverts happen to sit in those first twelve. Nothing about the cut predicts which way it
+leans, which is the argument for removing it rather than correcting for it.
+
+**A subpopulation is a fact about that subpopulation.** claims-floor read one CFR title out
+of six. Its *rate* generalised fine — 52.2% against a pooled 49.1% — but its median
+staleness, 0.28 years, was a tenth of every other regulator's, and the README had already
+explained that away as "most amendments are recent". One regulator is one drafting culture;
+the number was about OSHA, not about versioned documents.
 
 agri-desk is the worst case and did not look like one. Its small corpus produced a
 false-alarm rate of exactly **1.000**, which reads as the strongest possible result and is
 actually the weakest: **a filter that rejects 100% of its input is indistinguishable from a
-filter that is broken.** Only on the full corpus do two genuine variants survive, and only
-then is there evidence the guard keeps anything.
+filter that is broken.** Only on the full corpus do two genuine variants survive — both one
+sequence found in Pakistan and India — and only then is there evidence the guard keeps
+anything.
 
-In three of the four cases the subset existed because something was too slow, not because
-anyone chose it. A quadratic `dedupe` does not announce itself — it just quietly narrows
-what gets measured.
+In three of the five, the subset existed because something was too slow or too far away, not
+because anyone chose it. A quadratic `dedupe` does not announce itself; it just quietly
+narrows what gets measured.
 
 ### What is honestly not measured
 

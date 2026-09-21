@@ -8,26 +8,48 @@ serves the shared operator console at `/`.
 
 ## The finding
 
-**Measured on real versioned regulation** — the eCFR version index for Title 29 (Labor):
-1,000 real section versions across 577 sections, each with the date its amendment took
-effect.
+**Measured on real versioned regulation across six regulators** — eCFR version indexes for
+Titles 12, 21, 26, 29, 40 and 45: 6,000 real section versions across 3,204 sections, each
+with the date its amendment took effect.
 
 | | |
 |---|---:|
-| Sections | 577 |
-| **Amended more than once** | **272 (47%)** |
-| Median versions per amended section | 2 (max 11) |
-| Questions where the date matters | 695 |
-| **Answered wrongly by returning the current text** | **363 (52.2%)** |
-| Worst case, how far out the returned text was | **9.6 years** |
+| Sections | 3,204 |
+| **Amended more than once** | **1,342 (42%)** |
+| Median versions per amended section | 2 (max 26) |
+| Questions where the date matters | 4,138 |
+| **Answered wrongly by returning the current text** | **2,032 (49.1%)** |
+| **Median staleness of the returned text** | **2.47 years** |
+| Worst case | **10.0 years** |
 
 **For a section that has ever been amended, answering from the current text answers a
 different question half the time.** The answer is fluent, it cites a real section, and it is
 about a different set of words than the one that governed the event.
 
-The median gap is under a year, because most amendments are recent. **The tail is what
-decides a claim wrongly** — nearly a decade of intervening amendments, invisible in the
-output.
+### One regulator is one drafting culture
+
+This was first measured on Title 29 alone, and one of its two headline numbers did not
+survive contact with the other five.
+
+| Title | | Amended | Wrong-version rate | Median staleness |
+|---:|---|---:|---:|---:|
+| 26 | Internal Revenue | 312 | 0.209 | 2.63 yr |
+| 21 | Food & Drugs | 174 | 0.421 | 3.64 yr |
+| 45 | Public Welfare | 196 | 0.448 | 4.35 yr |
+| 29 | **Labor** | 272 | **0.522** | **0.28 yr** |
+| 12 | Banks | 213 | 0.546 | 2.55 yr |
+| 40 | Environment | 175 | 0.743 | 1.99 yr |
+
+**The rate generalised. The severity did not.** Title 29's 52.2% sits mid-range against a
+pooled 49.1%, so the headline was sound. But its median staleness of **0.28 years** is a
+tenth of every other regulator's, and the old README explained that away in a sentence:
+*"the median gap is under a year, because most amendments are recent."* That was a fact
+about OSHA presented as a fact about versioned documents. Pooled across six titles the
+median error is **2.47 years** — not a tail risk, the typical case.
+
+The rate itself still varies three and a half fold, from Tax at 0.209 to the EPA at 0.743.
+A product that quotes one number for "how often this matters" is quoting a number about
+whichever regulator it happened to read.
 
 So the product refuses rather than defaults. A loss date with no wording in force raises
 `NoVersionInForceError`; overlapping versions raise too. Falling back to the latest was the
@@ -40,17 +62,23 @@ regulation with a version history and an effective date is structurally the same
 policy wording with a version history and a loss date — and it is real. Inventing an archive
 would have produced a number that measured the invention.
 
-### Something the data taught
+### Two things the data taught
 
-Several sections carry two entries with the **same** amendment date. A test case chosen
-without checking for that failed spuriously, and the duplicate-date case is now asserted
-rather than worked around, because a version history is not guaranteed to be a clean
-sequence of distinct dates.
+**A version history is not a clean sequence of distinct dates.** Several sections carry two
+entries with the **same** amendment date. A test case chosen without checking for that
+failed spuriously, and the duplicate-date case is now asserted rather than worked around.
+
+**A section number is not a key.** `1.1` is a real section in five of the six titles, and
+140 identifiers appear in more than one. Merging the titles on the bare number would have
+produced 3,029 sections instead of 3,204 — and the difference is not lost rows, it is **149
+invented amendments**: one agency's rule change appearing in another agency's timeline.
+Histories are keyed `title:identifier`, and there is a test that counts the invented
+amendments so the shortcut cannot come back.
 
 Reproduce it:
 
 ```bash
-cd 15_claims-floor && python -m pytest tests/test_real_versions.py -q     # 10 passed
+cd 15_claims-floor && python -m pytest tests/test_real_versions.py -q     # 13 passed
 ```
 
 ## Agents and write authority
@@ -106,7 +134,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 15_claims-floor
-python -m pytest -q                      # 17 passed
+python -m pytest -q                      # 30 passed
 PYTHONPATH="src;../platform/src" python -m claimsfloor.app    # console on http://127.0.0.1:8000
 ```
 

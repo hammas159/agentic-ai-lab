@@ -18,25 +18,26 @@ one, the same *mechanism* is measured on the largest real corpus of dated edits 
 A revert is a line that went A, then B, then back to A. Not a rewrite, not churn — one edit
 undoing another, which is exactly what `detect_reverts` looks for on a deal record.
 
-**Measured over all 35 repositories, full history** — 424 commits, 583,531 line edits.
+**Measured over all 35 repositories, full history** — 424 commits, 711,082 line edits.
 
 | | Naive | **Honest** |
 |---|---:|---:|
-| Line edits counted | 583,531 | **263,631** |
+| Line edits counted | 711,082 | **264,110** |
 | Reverts found | 869 | **27** |
-| **Revert rate** | 0.1489% | **0.0102%** |
-| | | *one in 9,764* |
+| **Revert rate** | 0.1222% | **0.0102%** |
+| | | *one in 9,781* |
 
-**The same history, read two ways, differs by 14.5x.** The gap is not a detail of the
-corpus — it is two decisions about what counts as an edit, and both of them are decisions
-this product has to make on a CRM where agents and people write into the same records.
+**The same history, read two ways, differs by an order of magnitude.** The gap is not a
+detail of the corpus — it is two decisions about what counts as an edit, and both of them
+are decisions this product has to make on a CRM where agents and people write into the same
+records.
 
-**1. Machine-written files are 55% of the edits and 97% of the reverts.** Committed datasets
+**1. Machine-written files are most of the edits and 97% of the reverts.** Committed datasets
 and regenerated `results.json` files are not somebody's judgement. Every one of the 1,457
 reverts in JSON came from 13 result files — `mcp-lab/projects/03_bfcl_tool_calling/results.json`
 alone contributed 553. A number returning to a previous value across re-runs is a script
 re-emitting its own output, not one writer undoing another. Committed CSV, TXT, LOG and
-GenBank data contributed **206,000 edits and zero reverts**, quietly diluting the
+GenBank data contributed **over 300,000 edits and zero reverts**, quietly diluting the
 denominator at the same time.
 
 **2. A line removed and restored inside one commit never moved.** With `-U0` git reports a
@@ -44,11 +45,28 @@ line that shifted within a file as a remove/add pair. Reading that as a revert a
 **86%** of what remained. Undoing is a relationship *between* commits, so same-commit pairs
 now cancel and the three events must land on three increasing commits.
 
-What survives is small and real: **27 reverts in 263,631 hand-written line edits**, median
+What survives is small and real: **27 reverts in 264,110 hand-written line edits**, median
 gap one commit, maximum 23. **28 of the 34 substantial repositories contain none at all.**
 That is the floor a medium with diffs, atomic commits and review achieves — and it is the
 useful number precisely because a CRM field has none of them. No diff is shown, no commit is
 atomic, nothing is reviewed, and the writer is often a process rather than a person.
+
+### The distinction proved itself by accident
+
+Halfway through this work, `agri-desk`'s corpus was replaced with a 7.5 MB GenBank file
+committed to this repository — about **127,000 new line edits**, none of them written by a
+person.
+
+| | Before that commit | After |
+|---|---:|---:|
+| Naive rate | 0.1489% | **0.1222%** |
+| Honest rate | 0.0102% | **0.0102%** |
+| Authored reverts | 27 | **27** |
+
+**An 18% swing in the headline, caused by no change in how anybody edits anything.** The
+authored rate did not move at all. A metric that reacts to someone committing a dataset is
+not measuring editing behaviour, and on a CRM the equivalent commit — a bulk enrichment
+import — happens weekly. There is a test pinning both halves of this.
 
 ### Why this is the product's central lesson, not a measurement footnote
 
@@ -77,20 +95,22 @@ measurement that was never made.
   building edits directly could get a closing brace reported as a revert. Whether a line is
   substantial enough to count is a property of revert detection, not of where the edits came
   from, and it now lives there.
-- **The survey was capped at 12 repositories, alphabetically.** A revert is a *pair* of edits
-  drawn from the history pool, so shrinking the pool can only undercount — and did: 12
-  repositories reported 0.063% where all 35 report 0.285% on the same definition. There is
-  now a test asserting the capped rate is below the full one, so the bias is recorded rather
-  than merely fixed.
-- The two corrections above pull in opposite directions, which is why neither was noticed
-  for so long. Widening the corpus raised the number 4.5x; excluding generated files and
-  same-commit pairs cut it 14.5x. The old assertions were loose bands (`< 0.005`, `> 50`) and
-  passed comfortably throughout.
+- **The survey was capped at 12 repositories, in name order.** That reported 0.0237% against
+  0.1222% over all 35 — a fivefold undercount, because the repositories with the most
+  regenerated result files, `mcp-lab` and `nlp-lab` with 1,343 reverts between them, sort
+  after the twelfth. **But the authored rate moves the other way**: 24 of the 27 hand-written
+  reverts are inside those first twelve, so the subset slightly *overstates* it. A
+  convenience cut has no reliable direction — which is the argument for removing it rather
+  than reasoning about which way it leans. Both directions are now pinned by a test.
+- The corrections pull against each other, which is why none was noticed for so long.
+  Widening the corpus raised the naive number fivefold; excluding generated files and
+  same-commit pairs cut it by an order of magnitude. The old assertions were loose bands
+  (`< 0.005`, `> 50`) and passed comfortably throughout.
 
 Reproduce it:
 
 ```bash
-cd 01_revenue-desk && python -m pytest tests/test_real_reverts.py -q     # 13 passed
+cd 01_revenue-desk && python -m pytest tests/test_real_reverts.py -q     # 14 passed
 ```
 
 ## Agents and write authority
@@ -147,7 +167,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 01_revenue-desk
-python -m pytest -q                      # 33 passed
+python -m pytest -q                      # 34 passed
 PYTHONPATH="src;../platform/src" python -m revenue.app    # console on http://127.0.0.1:8000
 ```
 
