@@ -1,13 +1,27 @@
 """watchtower against the real OSV vulnerability database.
 
-`products/data/osv_pypi.zip` is OSV's published export for PyPI: 30,552 real
-advisories across 13,587 packages, each carrying the version ranges it applies
-to. Every figure asserted here was produced by running this code over that file.
+`products/data/osv_pypi.zip` is OSV's published export for PyPI: 30,098 real
+PyPI advisories across 13,327 packages, each carrying the version ranges it
+applies to.
+
+Two things about that file were not what this product assumed. It contains 454
+entries from other ecosystems, because a GHSA record can list packages in
+several at once. And **39% of it is not vulnerability reports at all** — `MAL-`
+records are malicious packages, and the shortcut this product exists to discredit
+cannot fire on a single one of them. Every figure asserted here was produced by
+running this code over that file.
 """
 
 import pytest
 
-from watchtower.osv import OSV_ZIP, Advisory, Window, installed, load, version_key
+from watchtower.osv import (
+    OSV_ZIP,
+    Advisory,
+    Window,
+    installed,
+    load,
+    version_key,
+)
 
 pytestmark = pytest.mark.skipif(not OSV_ZIP.exists(), reason="OSV export not on disk")
 
@@ -41,8 +55,75 @@ def verdicts(db):
 
 
 def test_the_database_loads(db):
-    assert len(db) > 13_000
-    assert sum(len(a) for a in db.values()) > 30_000
+    assert len(db) == 13_327
+    assert sum(len(a) for a in db.values()) == 30_098
+    # Filtered to one ecosystem. Without the filter 454 NuGet, Maven, npm,
+    # crates.io, RubyGems and Go packages arrive too, and their versions get
+    # ordered by a PEP 440-ish key that means nothing for a Go pseudo-version.
+    assert {a.ecosystem for v in db.values() for a in v} == {"PyPI"}
+
+
+def test_the_unfiltered_load_really_does_pull_in_other_ecosystems():
+    everything = load(None, None)
+    advisories = [a for v in everything.values() for a in v]
+    foreign = [a for a in advisories if a.ecosystem != "PyPI"]
+    assert len(foreign) == 454
+    assert {a.ecosystem for a in foreign} >= {"npm", "Maven", "NuGet", "crates.io"}
+
+
+def test_two_fifths_of_the_database_is_malicious_packages_not_vulnerabilities(db):
+    advisories = [a for v in db.values() for a in v]
+    malicious = [a for a in advisories if a.malicious]
+    assert len(malicious) == 11_734
+    assert len(malicious) / len(advisories) == pytest.approx(0.390, abs=0.01)
+    # A MAL- record is a typosquat or a backdoored release. The remedy is
+    # removal, not an upgrade, so there is nothing to be "below".
+    assert sum(1 for a in malicious if a.has_fix) == 5
+
+
+def test_the_shortcut_cannot_fire_on_a_malicious_package(db):
+    # THE SHARPER FINDING. Restricted to MAL- records the shortcut is wrong
+    # 99.8% of the time, and every single error is a MISS. It has no false
+    # positives here because it never fires at all: no fixed version exists to
+    # be below, so `affects_naively` returns False for every malicious package
+    # in the database.
+    #
+    # "Wrong 15% of the time" understates this. For two fifths of OSV the
+    # shortcut is not inaccurate, it is structurally incapable of an alert.
+    fp = fn = agree = 0
+    for advisories in db.values():
+        malicious = [a for a in advisories if a.malicious]
+        if not malicious:
+            continue
+        candidates = set()
+        for adv in malicious:
+            for window in adv.windows:
+                candidates.add(window.introduced)
+                if window.fixed:
+                    candidates.add(window.fixed)
+        for adv in malicious:
+            for version in candidates:
+                naive, correct = adv.affects_naively(version), adv.affects(version)
+                if naive == correct:
+                    agree += 1
+                elif naive:
+                    fp += 1
+                else:
+                    fn += 1
+    total = fp + fn + agree
+    assert total == 6_415
+    assert fp == 0
+    assert fn / total == pytest.approx(0.998, abs=0.002)
+
+
+def test_a_real_vulnerability_usually_does_have_a_fix(db):
+    # The contrast that makes the MAL number mean something: where a fix can
+    # exist, it usually does, so the shortcut at least fires.
+    advisories = [a for v in db.values() for a in v]
+    for kind, expected in (("GHSA", 0.073), ("PYSEC", 0.120)):
+        group = [a for a in advisories if a.kind == kind]
+        without = sum(1 for a in group if not a.has_fix)
+        assert without / len(group) == pytest.approx(expected, abs=0.02), kind
 
 
 def test_versions_order_numerically():
@@ -78,11 +159,43 @@ def test_the_shortcut_flags_versions_written_before_the_bug():
 
 
 def test_the_shortcut_is_wrong_one_time_in_six(verdicts):
-    # THE FINDING. 2.1 million verdicts over 30,552 real advisories.
+    # THE FINDING. 2.1 million verdicts over 30,098 real advisories.
     total = sum(verdicts.values())
-    assert total > 2_000_000
+    assert total == 2_146_007
     wrong = verdicts["false_positive"] + verdicts["false_negative"]
-    assert wrong / total == pytest.approx(0.154, abs=0.01)
+    assert wrong / total == pytest.approx(0.1541, abs=0.005)
+
+
+def test_the_headline_survives_dropping_the_malicious_records(db):
+    # Worth checking, since MAL- records are 39% of the database and 99.8%
+    # wrong: is the 15.4% just malware? No. On vulnerability reports alone it
+    # is 15.2%, because MAL- advisories carry very few version boundaries and
+    # so contribute only 6,415 of 2.1 million verdicts.
+    #
+    # The two findings are independent: the range logic matters for real
+    # vulnerabilities, and the shortcut is blind to malicious packages.
+    fp = fn = agree = 0
+    for advisories in db.values():
+        real = [a for a in advisories if not a.malicious]
+        if not real:
+            continue
+        candidates = set()
+        for adv in real:
+            for window in adv.windows:
+                candidates.add(window.introduced)
+                if window.fixed:
+                    candidates.add(window.fixed)
+        for adv in real:
+            for version in candidates:
+                naive, correct = adv.affects_naively(version), adv.affects(version)
+                if naive == correct:
+                    agree += 1
+                elif naive:
+                    fp += 1
+                else:
+                    fn += 1
+    total = fp + fn + agree
+    assert (fp + fn) / total == pytest.approx(0.1516, abs=0.005)
 
 
 def test_it_errs_overwhelmingly_towards_false_alarms(verdicts):

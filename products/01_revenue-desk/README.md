@@ -18,14 +18,16 @@ one, the same *mechanism* is measured on the largest real corpus of dated edits 
 A revert is a line that went A, then B, then back to A. Not a rewrite, not churn — one edit
 undoing another, which is exactly what `detect_reverts` looks for on a deal record.
 
-**Measured over all 35 repositories, full history** — 424 commits, 711,082 line edits.
+**Measured over every repository on this machine, full history** — 36 checkouts, 429
+commits, 714,164 line edits. This is a live disk: the totals move as other work lands on it,
+which turns out to be the point.
 
 | | Naive | **Honest** |
 |---|---:|---:|
-| Line edits counted | 711,082 | **264,110** |
+| Line edits counted | 714,164 | **267,192** |
 | Reverts found | 869 | **27** |
-| **Revert rate** | 0.1222% | **0.0102%** |
-| | | *one in 9,781* |
+| **Revert rate** | 0.1217% | **0.0101%** |
+| | | *one in 9,896* |
 
 **The same history, read two ways, differs by an order of magnitude.** The gap is not a
 detail of the corpus — it is two decisions about what counts as an edit, and both of them
@@ -45,8 +47,8 @@ line that shifted within a file as a remove/add pair. Reading that as a revert a
 **86%** of what remained. Undoing is a relationship *between* commits, so same-commit pairs
 now cancel and the three events must land on three increasing commits.
 
-What survives is small and real: **27 reverts in 264,110 hand-written line edits**, median
-gap one commit, maximum 23. **28 of the 34 substantial repositories contain none at all.**
+What survives is small and real: **27 reverts in 267,192 hand-written line edits**, median
+gap one commit, maximum 23. **29 of the 35 substantial repositories contain none at all.**
 That is the floor a medium with diffs, atomic commits and review achieves — and it is the
 useful number precisely because a CRM field has none of them. No diff is shown, no commit is
 atomic, nothing is reviewed, and the writer is often a process rather than a person.
@@ -57,13 +59,14 @@ Halfway through this work, `agri-desk`'s corpus was replaced with a 7.5 MB GenBa
 committed to this repository — about **127,000 new line edits**, none of them written by a
 person.
 
-| | Before that commit | After |
-|---|---:|---:|
-| Naive rate | 0.1489% | **0.1222%** |
-| Honest rate | 0.0102% | **0.0102%** |
-| Authored reverts | 27 | **27** |
+| | Before | After the commit | After a 36th repo appeared |
+|---|---:|---:|---:|
+| Naive rate | 0.1489% | 0.1222% | **0.1217%** |
+| Honest rate | 0.0102% | 0.0102% | **0.0101%** |
+| Authored reverts | 27 | 27 | **27** |
 
-**An 18% swing in the headline, caused by no change in how anybody edits anything.** The
+**An 18% swing in the headline, caused by no change in how anybody edits anything** — and
+then a whole new repository arrived and the honest rate still did not move. The
 authored rate did not move at all. A metric that reacts to someone committing a dataset is
 not measuring editing behaviour, and on a CRM the equivalent commit — a bulk enrichment
 import — happens weekly. There is a test pinning both halves of this.

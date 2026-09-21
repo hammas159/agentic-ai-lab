@@ -65,11 +65,32 @@ class Advisory:
     summary: str
     windows: list[Window] = field(default_factory=list)
     explicit: set[str] = field(default_factory=set)
+    ecosystem: str = "PyPI"
+
+    @property
+    def kind(self) -> str:
+        """MAL, GHSA, PYSEC or OSV — and the first of those is not like the rest.
+
+        A `MAL-` record is a malicious package: a typosquat or a backdoored
+        release. It is an OSV record and it is not a vulnerability report, and
+        the difference decides whether a fix can exist. 11,729 of the 11,734
+        here have no fixed version, because the remedy for a malicious package
+        is removal, not an upgrade.
+        """
+        return self.id.split("-")[0] or "?"
+
+    @property
+    def malicious(self) -> bool:
+        return self.kind == "MAL"
 
     @property
     def highest_fixed(self) -> str | None:
         fixes = [w.fixed for w in self.windows if w.fixed]
         return max(fixes, key=version_key) if fixes else None
+
+    @property
+    def has_fix(self) -> bool:
+        return self.highest_fixed is not None
 
     def affects(self, version: str) -> bool:
         """Correct answer: is this version inside any affected window."""
@@ -87,17 +108,36 @@ class Advisory:
         return top is not None and version_key(version) < version_key(top)
 
 
-def _advisories_from(raw: dict) -> list[Advisory]:
+ECOSYSTEM = "PyPI"
+
+
+def _advisories_from(raw: dict, ecosystem: str | None = ECOSYSTEM) -> list[Advisory]:
+    """Advisories for one ecosystem.
+
+    The filter is not cosmetic. A GHSA record can list packages in several
+    ecosystems at once, and reading every `affected` entry pulled 454 NuGet,
+    Maven, npm, crates.io, RubyGems and Go packages into what this module calls
+    a PyPI scan. Their versions are then ordered by a PEP 440-ish key that means
+    nothing for a Go pseudo-version like `0.0.0-20231016150651-428517fef5b9`.
+
+    Pass ``ecosystem=None`` to take everything, which is what the measurement of
+    this bug's size does.
+    """
     out: list[Advisory] = []
     for affected in raw.get("affected", []):
-        package = (affected.get("package") or {}).get("name", "")
+        package_block = affected.get("package") or {}
+        package = package_block.get("name", "")
+        found_in = package_block.get("ecosystem", "")
         if not package:
+            continue
+        if ecosystem is not None and found_in != ecosystem:
             continue
         adv = Advisory(
             id=raw.get("id", ""),
             package=package.lower().replace("_", "-"),
             summary=raw.get("summary", ""),
             explicit=set(affected.get("versions", []) or []),
+            ecosystem=found_in or ECOSYSTEM,
         )
         for rng in affected.get("ranges", []) or []:
             introduced = None
@@ -117,8 +157,8 @@ def _advisories_from(raw: dict) -> list[Advisory]:
     return out
 
 
-@lru_cache(maxsize=1)
-def load(path: str | None = None) -> dict:
+@lru_cache(maxsize=4)
+def load(path: str | None = None, ecosystem: str | None = ECOSYSTEM) -> dict:
     """Advisories indexed by normalised package name."""
     target = Path(path) if path else OSV_ZIP
     if not target.exists():
@@ -135,7 +175,7 @@ def load(path: str | None = None) -> dict:
                 continue
             if raw.get("withdrawn"):
                 continue
-            for adv in _advisories_from(raw):
+            for adv in _advisories_from(raw, ecosystem):
                 index.setdefault(adv.package, []).append(adv)
     return index
 

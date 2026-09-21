@@ -8,15 +8,15 @@ serves the shared operator console at `/`.
 
 ## The finding
 
-**Measured over OSV's published PyPI export** — 30,552 real advisories across 13,587
+**Measured over OSV's published PyPI export** — 30,098 real PyPI advisories across 13,327
 packages, each carrying the version ranges it applies to. Every advisory was judged at
-every boundary version known for its package: **2,148,036 verdicts.**
+every boundary version known for its package: **2,146,007 verdicts.**
 
 | | | |
 |---|---:|---|
-| Shortcut and interval logic agree | 1,816,839 | 84.6% |
-| **False positive** | **304,840** | **14.2%** — flags a version written before the bug |
-| False negative | 26,357 | 1.2% — clears a version after the last fix |
+| Shortcut and interval logic agree | 1,815,314 | 84.6% |
+| **False positive** | **304,543** | **14.2%** — flags a version written before the bug |
+| False negative | 26,150 | 1.2% — clears a version after the last fix |
 
 **The shortcut is wrong once every six or seven verdicts, and it errs towards false alarms
 eleven to one.**
@@ -34,6 +34,39 @@ A real case, `open-webui` / `GHSA-2724-6cpj-gf3v`, affected range `0.10.0` to `0
 The false negative is the mirror image and matters more per instance: a package with two
 maintained branches, broken again at `2.0` after being fixed at `1.2`, sits *above* the
 highest fixed version and gets cleared.
+
+### The sharper finding: two fifths of OSV has no fix to be below
+
+**39% of this database — 11,734 records — are not vulnerability reports at all.** `MAL-`
+entries are malicious packages: typosquats and backdoored releases. The remedy is removal,
+not an upgrade, so **11,729 of the 11,734 carry no fixed version whatsoever.**
+
+The shortcut is "anything below the highest fixed version is vulnerable". Where no fixed
+version exists it returns False, always. On malicious packages:
+
+| | |
+|---|---:|
+| Verdicts | 6,415 |
+| **False negatives** | **99.8%** |
+| False positives | **0** |
+
+Zero false positives is not accuracy. **It never fires.** For two fifths of OSV the shortcut
+is not inaccurate, it is structurally incapable of producing an alert — and the class it
+cannot see is the one where the package on your disk is hostile rather than merely flawed.
+
+"Wrong 15% of the time" understates that completely, and the two findings are independent:
+drop every malicious record and the headline is 15.2%, because `MAL-` advisories carry few
+version boundaries and contribute only 6,415 of 2.1 million verdicts. The range logic
+matters for real vulnerabilities; the blindness matters for malware.
+
+### A second thing the export was not
+
+The file is called a PyPI export and contains **454 entries from other ecosystems** — NuGet,
+Maven, npm, crates.io, RubyGems, Go — because a GHSA record can list packages in several at
+once. Reading every `affected` block pulled them into a PyPI scan, where a Go pseudo-version
+like `0.0.0-20231016150651-428517fef5b9` was being ordered by a PEP 440-ish key that means
+nothing for it. The loader now filters on ecosystem; it changed the headline by 0.08%, which
+is why it went unnoticed, and it was still wrong.
 
 ### This contradicts what this README used to predict
 
@@ -53,7 +86,7 @@ The 14.2% is a property of the advisory population, not a promise about your lap
 Reproduce it:
 
 ```bash
-cd 11_watchtower && python -m pytest tests/test_real_osv.py -q     # 10 passed, ~36s
+cd 11_watchtower && python -m pytest tests/test_real_osv.py -q     # 16 passed, ~70s
 ```
 
 ## Agents and write authority
@@ -108,7 +141,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 11_watchtower
-python -m pytest -q                      # 19 passed
+python -m pytest -q                      # 34 passed
 PYTHONPATH="src;../platform/src" python -m watchtower.app    # console on http://127.0.0.1:8000
 ```
 
