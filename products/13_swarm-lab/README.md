@@ -117,7 +117,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 13_swarm-lab
-python -m pytest -q                      # 20 passed
+python -m pytest -q                      # 30 passed
 PYTHONPATH="src;../platform/src" python -m swarmlab.app    # console on http://127.0.0.1:8000
 ```
 

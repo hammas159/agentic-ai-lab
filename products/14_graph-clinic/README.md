@@ -67,7 +67,7 @@ other half, and the useful output is the split rather than either verdict.
 Reproduce it:
 
 ```bash
-cd 14_graph-clinic && python -m pytest tests/test_real_graph.py -q     # 12 passed
+cd 14_graph-clinic && python -m pytest tests/test_real_graph.py -q     # 11 passed
 ```
 
 ## Agents and write authority

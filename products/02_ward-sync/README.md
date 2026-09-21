@@ -94,7 +94,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 02_ward-sync
-python -m pytest -q                      # 16 passed
+python -m pytest -q                      # 25 passed
 PYTHONPATH="src;../platform/src" python -m ward.app    # console on http://127.0.0.1:8000
 ```
 

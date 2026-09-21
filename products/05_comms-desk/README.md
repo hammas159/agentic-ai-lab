@@ -57,7 +57,7 @@ barrier is what stops it.
 Reproduce it:
 
 ```bash
-cd 05_comms-desk && python -m pytest tests/test_real_meetings.py -q     # 11 passed, ~80s
+cd 05_comms-desk && python -m pytest tests/test_real_meetings.py -q     # 10 passed, ~80s
 ```
 
 It takes eighty seconds because it reads all 139 meetings and runs the speaker-blind

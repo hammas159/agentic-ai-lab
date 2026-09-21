@@ -104,7 +104,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 04_ledger-brain
-python -m pytest -q                      # 17 passed
+python -m pytest -q                      # 27 passed
 PYTHONPATH="src;../platform/src" python -m ledger.app    # console on http://127.0.0.1:8000
 ```
 

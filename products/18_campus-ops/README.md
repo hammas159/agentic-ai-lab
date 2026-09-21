@@ -106,7 +106,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 18_campus-ops
-python -m pytest -q                      # 20 passed
+python -m pytest -q                      # 30 passed
 PYTHONPATH="src;../platform/src" python -m campusops.app    # console on http://127.0.0.1:8000
 ```
 

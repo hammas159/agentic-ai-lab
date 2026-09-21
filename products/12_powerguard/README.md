@@ -87,7 +87,7 @@ made.
 Reproduce it:
 
 ```bash
-cd 12_powerguard && python -m pytest tests/test_real_machine.py -q     # 17 passed
+cd 12_powerguard && python -m pytest tests/test_real_machine.py -q     # 15 passed
 ```
 
 ## Agents and write authority

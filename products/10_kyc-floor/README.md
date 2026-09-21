@@ -85,7 +85,7 @@ threshold tuned on one list and shipped against another is a different product.
 Reproduce it:
 
 ```bash
-cd 10_kyc-floor && python -m pytest tests/test_real_sanctions.py -q     # 12 passed
+cd 10_kyc-floor && python -m pytest tests/test_real_sanctions.py -q     # 11 passed
 cd 10_kyc-floor && python -m pytest tests/test_real_un.py -q            # 10 passed
 ```
 

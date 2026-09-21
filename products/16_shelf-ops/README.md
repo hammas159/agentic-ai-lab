@@ -106,7 +106,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 16_shelf-ops
-python -m pytest -q                      # 18 passed
+python -m pytest -q                      # 27 passed
 PYTHONPATH="src;../platform/src" python -m shelfops.app    # console on http://127.0.0.1:8000
 ```
 

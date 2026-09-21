@@ -113,7 +113,7 @@ measurement that was never made.
 Reproduce it:
 
 ```bash
-cd 01_revenue-desk && python -m pytest tests/test_real_reverts.py -q     # 14 passed
+cd 01_revenue-desk && python -m pytest tests/test_real_reverts.py -q     # 13 passed
 ```
 
 ## Agents and write authority

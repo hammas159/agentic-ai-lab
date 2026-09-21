@@ -110,7 +110,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 09_hermes-home
-python -m pytest -q                      # 15 passed
+python -m pytest -q                      # 24 passed
 PYTHONPATH="src;../platform/src" python -m hermes.app    # console on http://127.0.0.1:8000
 ```
 

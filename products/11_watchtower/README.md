@@ -86,7 +86,7 @@ The 14.2% is a property of the advisory population, not a promise about your lap
 Reproduce it:
 
 ```bash
-cd 11_watchtower && python -m pytest tests/test_real_osv.py -q     # 16 passed, ~70s
+cd 11_watchtower && python -m pytest tests/test_real_osv.py -q     # 15 passed, ~70s
 ```
 
 ## Agents and write authority
