@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 _WORD = re.compile(r"[a-z0-9']+")
 
@@ -18,8 +19,19 @@ STOP = frozenset(
 MIN_TOKENS = 4
 
 
-def tokens(text: str) -> set[str]:
-    return {w for w in _WORD.findall(text.lower()) if w not in STOP}
+@lru_cache(maxsize=200_000)
+def tokens(text: str) -> frozenset[str]:
+    """Content words, memoised.
+
+    Every comparison re-tokenised both sides, so a corpus-wide run spent most of
+    its time in `re.findall` on strings it had already seen. Caching is not a
+    micro-optimisation here: it is the difference between a measurement that runs
+    on the whole corpus and one quietly run on a twelve-meeting sample.
+
+    Bounded, because this is imported by a long-running API: an unbounded cache
+    keyed on arbitrary user text is a slow memory leak.
+    """
+    return frozenset(w for w in _WORD.findall(text.lower()) if w not in STOP)
 
 
 def similarity(a: str, b: str) -> float:
@@ -61,19 +73,51 @@ def dedupe(commitments: list[Commitment], threshold: float = 0.6) -> list[Cluste
 
     Speaker is a hard barrier, never a weighted feature: two people making
     similar promises made two promises. That is the over-merge this guards.
+
+    Blocked on (speaker, token) rather than compared pairwise. The naive version
+    is quadratic and could not finish the full AMI corpus at all — which is how
+    a measurement ends up quietly run on a twelve-meeting sample instead of the
+    whole thing. Two texts below the threshold must still share at least one
+    content word, so indexing by token loses nothing and skips the rest.
     """
     if not 0.0 < threshold <= 1.0:
         raise ValueError("threshold must be in (0, 1]")
+
     clusters: list[Cluster] = []
+    # (speaker, token) -> indices of clusters containing that token
+    index: dict[tuple[str, str], set[int]] = {}
+
     for item in commitments:
-        for cluster in clusters:
-            if cluster.speaker != item.speaker:
-                continue
-            if any(similarity(item.text, other.text) >= threshold for other in cluster.items):
+        item_tokens = tokens(item.text)
+        candidates: set[int] = set()
+        if len(item_tokens) >= MIN_TOKENS:
+            for token in item_tokens:
+                candidates |= index.get((item.speaker, token), set())
+
+        # Jaccard >= t forces min(|A|,|B|) >= t * max(|A|,|B|), so anything
+        # outside this band cannot reach the threshold and need not be scored.
+        size = len(item_tokens)
+        low, high = threshold * size, size / threshold
+
+        placed = False
+        for position in sorted(candidates):
+            cluster = clusters[position]
+            if any(
+                low <= len(tokens(other.text)) <= high
+                and similarity(item.text, other.text) >= threshold
+                for other in cluster.items
+            ):
                 cluster.items.append(item)
+                placed = True
                 break
-        else:
+
+        if not placed:
+            position = len(clusters)
             clusters.append(Cluster([item]))
+
+        for token in item_tokens:
+            index.setdefault((item.speaker, token), set()).add(position)
+
     return clusters
 
 

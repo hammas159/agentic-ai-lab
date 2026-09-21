@@ -47,6 +47,7 @@ Reproduce it:
 
 ```bash
 cd 20_driftwatch && python -m pytest tests/test_real_repos.py -q     # 10 passed
+cd 20_driftwatch && python -m pytest tests/test_structure.py -q     # 11 passed
 ```
 
 ### What had to be fixed to get this number
@@ -54,6 +55,36 @@ cd 20_driftwatch && python -m pytest tests/test_real_repos.py -q     # 10 passed
 The first extractor treated every sentence as a claim and reported 4,757 findings, nearly
 all of them unfalsifiable adjectives. Classification has to come before verification, or
 the output is noise with five real defects buried in it.
+
+### The second finding: some claims are made by layout, not by a sentence
+
+A heading reading `## All ten, at a glance` above a table of seven rows is drift, and the
+sentence checker found **zero** checkable claims in the README containing it. The number is
+in the heading, the noun it counts is nowhere, and the evidence is the table underneath.
+`structure.py` reads that shape directly: a heading stating a count, checked against the
+first table or list beneath it.
+
+Across the same 35 repositories it finds **6 counted headings, all 6 correct**. That is a
+small number and it is supposed to be — this checker's value is its precision, because the
+first version reported **81.4% of them wrong** and every one of those was its own bug:
+
+| False positive | Example | Why it isn't a count |
+|---|---|---|
+| Section indices | `## 04 · The injection that isn't an instruction` | a number, not a quantity |
+| Dates | `## 2026-09-16 · three projects updated` | a date |
+| Fenced code | `{"quote": "...12.4%"}` inside a ``` block | not a heading at all |
+| Multi-line list items | a 3-item list whose items wrap | counted as 1 item |
+
+Fixing those took the reported rate from 81.4% to 14.3%, and then to 0% once the one real
+drift was fixed upstream. **A checker whose first output is an alarming rate is usually
+measuring itself.**
+
+That one real drift is kept in [`tests/fixtures/code_llm_lab_drift.md`](tests/fixtures/code_llm_lab_drift.md),
+copied verbatim from the commit that carried it. It was asserted against the live
+repository until that README was rewritten by hand — at which point the test failed, for
+the wrong reason. A test that depends on somebody else's file staying broken is not
+evidence, so the evidence is now a fixture and the live check asserts only that the rate
+stays believable.
 
 ## Agents and write authority
 
@@ -91,7 +122,7 @@ is closed, so a column added next month does not quietly become writable.
 
 ## Real data
 
-The 33 repositories already on this machine and their real READMEs. `compliance-auditor` has already run over them and produced the 9-of-33 figure this product starts from.
+The 35 repositories already on this machine and their real READMEs. `compliance-auditor` has already run over them and produced the figure this product starts from.
 
 ## The deterministic core
 
@@ -107,7 +138,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 20_driftwatch
-python -m pytest -q                      # 20 passed
+python -m pytest -q                      # 41 passed
 PYTHONPATH="src;../platform/src" python -m driftwatch.app    # console on http://127.0.0.1:8000
 ```
 

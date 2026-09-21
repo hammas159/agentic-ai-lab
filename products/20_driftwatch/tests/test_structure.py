@@ -9,6 +9,8 @@ positive on a real README, and together they took the reported rate from an
 unbelievable 81% to 14%.
 """
 
+from pathlib import Path
+
 import pytest
 
 from driftwatch.repos import ROOT, scan
@@ -87,22 +89,36 @@ def test_a_fenced_code_block_is_not_a_heading():
     assert counted_headings(md) == []
 
 
+def test_the_one_real_drift_this_ever_caught():
+    # THE FINDING, kept as evidence rather than as a live assertion.
+    #
+    # `code-llm-lab`'s README carried "## All ten, at a glance" above a table of
+    # seven rows, through five commits. The excerpt in fixtures/ is that section,
+    # copied verbatim out of commit 31b8c43 — a real drift in a real repository,
+    # found by this checker.
+    #
+    # It is a fixture because the original has since been rewritten by hand and
+    # the heading now reads "All seven". Asserting against the live file made
+    # this suite depend on a third party's README staying broken, which is not a
+    # property any test should rest on: it passed for the wrong reason while the
+    # drift lasted, then failed for the wrong reason when someone fixed it.
+    excerpt = (Path(__file__).parent / "fixtures/code_llm_lab_drift.md").read_text(
+        encoding="utf-8"
+    )
+    (found,) = broken_headings(excerpt)
+    assert (found.stated, found.found, found.kind) == (10, 7, "table")
+    assert "heading says 10" in found.detail
+
+
 @pytest.mark.skipif(not ROOT.exists(), reason="no checkouts at D:/github")
 def test_across_the_real_portfolio_the_rate_is_believable():
-    # THE FINDING. Seven headings across 35 repositories state a count; six are
-    # right. A checker reporting 81% wrong was reporting its own bugs.
+    # Six headings across 35 repositories state a count, and all six are right
+    # now that the one drift has been fixed upstream. The number that matters is
+    # the denominator: a checker that reported 81% wrong was reporting its own
+    # false positives, and this asserts the rate stays believable rather than
+    # asserting any particular repository is broken.
     repos = scan()
     stated = sum(len(counted_headings(r.readme)) for r in repos)
     wrong = sum(len(broken_headings(r.readme)) for r in repos)
     assert stated >= 5
     assert wrong / stated < 0.30
-
-
-@pytest.mark.skipif(not ROOT.exists(), reason="no checkouts at D:/github")
-def test_the_one_real_drift_is_found():
-    hits = {
-        (r.name, b.stated, b.found)
-        for r in scan()
-        for b in broken_headings(r.readme)
-    }
-    assert ("code-llm-lab", 10, 7) in hits

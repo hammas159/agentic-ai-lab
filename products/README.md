@@ -14,8 +14,8 @@ data — is in its own README and in [`../../PRODUCT-PLAN.md`](../../PRODUCT-PLA
 
 ```
 python -m venv .venv && .venv/Scripts/pip install -e platform[api,infra] pytest ruff
-cd platform        && python -m pytest -q     # 129 passed
-cd 01_revenue-desk && python -m pytest -q     #  21 passed
+cd platform        && python -m pytest -q     # 132 passed
+cd 01_revenue-desk && python -m pytest -q     #  29 passed
 
 python scripts/capture.py       # runs all 20 for real, writes scripts/runs.json
 python scripts/smoke_serve.py   # boots all 20 on uvicorn, writes scripts/served.json
@@ -27,10 +27,10 @@ python scripts/screenshots.py   # real captures of the running console
 Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
 which is a real intake → drain → approve cycle. None of those figures were typed by hand.
 
-**680 tests, all passing, zero skipped.** Every product reads a real dataset; the
+**704 tests, all passing, zero skipped.** Every product reads a real dataset; the
 contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
 committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
-OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and six RFCs.
+OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and seventeen RFCs.
 
 **All 20 also boot on a real ASGI server**, not just a test client:
 
@@ -53,16 +53,16 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 | [02](02_ward-sync) | **ward-sync** | 3,850 Synthea prescriptions | **93% of prescriptions end**; a "current list" is **5.5x too long** for 104 of 105 patients |
 | [03](03_one-desk) | **one-desk** | 300 AMI participant summaries | Two people describing one meeting overlap at **0.23**; a per-platform rewrite at **0.79** |
 | [04](04_ledger-brain) | **ledger-brain** | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
-| [05](05_comms-desk) | **comms-desk** | 9,550 AMI dialogue acts | Ignoring who spoke makes 26 merges, **16 of them wrong** |
+| [05](05_comms-desk) | **comms-desk** | 104,923 AMI dialogue acts, all 139 meetings | Ignoring who spoke makes 786 merges, **686 of them wrong** |
 | [06](06_oncall-mate) | **oncall-mate** | 10,000 Loghub lines, 5 systems | Compression ratio spans **115x** with the templater fixed |
 | [07](07_hire-desk) | **hire-desk** | 5,882 real conversation turns | After redacting 1,971 names, **"Mel" survives 59 times** |
-| [08](08_bid-desk) | **bid-desk** | 1,471 RFC 2119 requirements | Recall is **1.000**; precision **0.830** — the asymmetry runs the other way |
+| [08](08_bid-desk) | **bid-desk** | 4,036 RFC 2119 requirements, 17 RFCs | Recall is **1.000**; precision **0.827** — the asymmetry runs the other way |
 | [09](09_hermes-home) | **hermes-home** | LoCoMo, 1,982 questions | Median answer lives **14 sessions back**; an 8-session window answers **28%** |
 | [10](10_kyc-floor) | **kyc-floor** | OFAC, 8,650 labelled aliases | Consonant skeletons buy **+19.8 points of recall for zero precision cost** |
 | [11](11_watchtower) | **watchtower** | 30,552 OSV advisories | "Below the highest fix" is wrong **15.4%** of the time, false alarms **11:1** |
 | [12](12_powerguard) | **powerguard** | this machine, 392 processes | **3 of 3** expensive jobs are another session's; it plans **0** actions against them |
 | [13](13_swarm-lab) | **swarm-lab** | N workers on real Redis | Uncoordinated waste is exactly **1 - 1/N**; 95% at N=21 |
-| [14](14_graph-clinic) | **graph-clinic** | 3,000 HotpotQA questions | Graph wins **4x** on bridge questions and loses **50x** on comparison ones |
+| [14](14_graph-clinic) | **graph-clinic** | all 7,405 HotpotQA questions | Graph wins **4.5x** on bridge questions and finds **1 in 1,000** comparison ones |
 | [15](15_claims-floor) | **claims-floor** | 1,000 eCFR section versions | Returning the current text is wrong **52%** of the time, by up to **9.6 years** |
 | [16](16_shelf-ops) | **shelf-ops** | 4,501 real products | Compounding two in-policy discounts breaks **one product in five** |
 | [17](17_fleet-desk) | **fleet-desk** | TSPLIB berlin52 + proven optimum | "Go round the city in a circle" is **92% worse than optimal** |
@@ -79,8 +79,8 @@ overturned four, and the READMEs say so rather than quietly reframing:
   real cause is simpler and larger: flagging versions written *before* the bug existed.
 - **bid-desk** was designed around "a miss is fatal, a false positive is cheap". Recall
   turned out to be perfect and precision the problem.
-- **graph-clinic** predicted the graph would lose to a plain baseline. It wins four to one on
-  half the corpus and loses fifty to one on the other half.
+- **graph-clinic** predicted the graph would lose to a plain baseline. It wins four and a
+  half to one on the bridge questions and finds one comparison pair in a thousand.
 - **one-desk** predicted the four platform variants would be near-identical. They are — and
   the human baseline needed to *prove* it was the part that was actually hard.
 

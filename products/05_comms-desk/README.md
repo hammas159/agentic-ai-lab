@@ -10,29 +10,44 @@ serves the shared operator console at `/`.
 
 ## The finding
 
-**Measured on the AMI Meeting Corpus** — 12 real recorded meetings, 9,550 hand-annotated
-dialogue acts across 48 speaker slots, of which **922 are Suggest or Offer**: the acts that
-put someone on the hook.
+**Measured on the whole AMI Meeting Corpus** — all 139 real recorded meetings, 104,923
+hand-annotated dialogue acts across 556 speaker slots, of which **10,462 are Suggest or
+Offer**: the acts that put someone on the hook.
 
 | Similarity threshold | Duplicates found | Speaker-blind | **Wrong merges** |
 |---:|---:|---:|---:|
-| 0.5 | 10 | 26 | **16 — 62% of everything it merged** |
-| 0.6 | 6 | 9 | 3 |
-| 0.7 | 3 | 3 | 0 |
+| 0.5 | 100 | 786 | **686 — 87% of everything it merged** |
+| 0.6 | 45 | 245 | 200 — 82% |
+| 0.7 | 24 | 89 | 65 — 73% |
 
-**At the threshold you need to catch genuine restatements, ignoring who spoke makes 26
-merges of which 16 join two different people's commitments.** Sixty-two per cent of the
-merging is wrong, and each wrong merge deletes someone's promise from the board.
+**At the threshold you need to catch genuine restatements, ignoring who spoke makes 786
+merges of which 686 join two different people's commitments.** Seven out of every eight
+merges are wrong, and each wrong merge deletes someone's promise from the board.
 
-Tightening the threshold does make the damage vanish — along with the benefit. At 0.7,
-nothing merges across speakers and almost nothing merges at all. There is no threshold that
-separates the two, which is why **speaker is a hard barrier here and never a weighted
-feature in a similarity score.** There is a test asserting no threshold, however loose,
-merges across speakers.
+Tightening the threshold does not rescue it. At 0.7 the merging has nearly stopped being
+useful — 24 genuine duplicates in ten thousand commitments — and going speaker-blind still
+gets 73% of its merges wrong. There is no threshold that separates the two, which is why
+**speaker is a hard barrier here and never a weighted feature in a similarity score.**
+There is a test asserting no threshold, however loose, merges across speakers.
+
+### The sample was not just imprecise, it was low
+
+This was first measured on twelve meetings, which put the wrong-merge share at **62%**. The
+full corpus says **87%**. That gap is not sampling luck, and the direction was predictable:
+wrong merges are cross-speaker collisions, so they grow with the number of speakers in the
+pool. Twelve meetings held 48 speaker slots; 139 hold 556. **Any sample of this measurement
+is a floor, never an estimate** — which is the argument for paying the runtime.
+
+Measuring it all needed the merge step to stop being quadratic. `dedupe` now blocks
+candidates on `(speaker, token)` and memoises tokenisation, which took the corpus-wide run
+from over ten minutes to about twenty seconds *and returns the identical clusters* — there
+is a test that runs the old pairwise version beside it on real data and compares cluster
+membership, because an optimisation that silently drops a real duplicate is precisely the
+bug this product exists to catch.
 
 ### What this corpus cannot show, said plainly
 
-The within-meeting duplicate rate is about **1%** — people rarely restate a commitment
+The within-meeting duplicate rate is about **1%** (100 in 10,462) — people rarely restate a commitment
 inside one conversation. The duplication this product is built for is **cross-source**: the
 same promise made in a meeting and repeated in a follow-up email. AMI is meetings only, so
 that rate is not measurable here and is not claimed. What AMI does establish is the thing
@@ -42,8 +57,12 @@ barrier is what stops it.
 Reproduce it:
 
 ```bash
-cd 05_comms-desk && python -m pytest tests/test_real_meetings.py -q     # 8 passed
+cd 05_comms-desk && python -m pytest tests/test_real_meetings.py -q     # 11 passed, ~80s
 ```
+
+It takes eighty seconds because it reads all 139 meetings and runs the speaker-blind
+baseline three times. That baseline is the expensive half — dropping the speaker drops the
+only barrier that partitions the work.
 
 ## Agents and write authority
 
@@ -98,7 +117,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 05_comms-desk
-python -m pytest -q                      # 14 passed
+python -m pytest -q                      # 24 passed, ~86s
 PYTHONPATH="src;../platform/src" python -m comms.app    # console on http://127.0.0.1:8000
 ```
 
@@ -133,6 +152,7 @@ anything the model wrote that no tool receipt supports, before a person ever see
 
 - The first merger used text similarity alone and combined a promise by one attendee with a similar promise by another. Speaker identity is now a hard barrier, not a feature in a score.
 - Similarity needed a floor on length. Two three-word commitments match each other trivially and almost never mean the same thing.
+- The first honest measurement ran on twelve meetings because the full corpus never finished. That is the failure mode worth naming: a slow function does not announce itself, it just quietly narrows what you measure — and here the narrow answer was wrong by 25 points, in the flattering direction.
 
 ## Input / Output
 

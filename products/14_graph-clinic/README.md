@@ -10,7 +10,7 @@ serves the shared operator console at `/`.
 
 ## The finding
 
-**Measured on 3,000 HotpotQA validation questions**, read from the local HuggingFace
+**Measured on all 7,405 HotpotQA validation questions**, read from the local HuggingFace
 cache. Each has two gold paragraphs hidden among ten, and each is labelled `bridge` (hop
 from one paragraph to another) or `comparison` (read two and compare).
 
@@ -19,16 +19,17 @@ names "Ed Wood" in its text is an edge between two entities.
 
 | Question type | n | Graph, 1 hop | Graph, 2 hops | Lexical top-2 |
 |---|---:|---:|---:|---:|
-| **bridge** | 2,400 | **73.4%** | 74.6% | 16.9% |
-| **comparison** | 600 | **0.2%** | 1.3% | 9.5% |
-| All | 3,000 | 58.7% | 60.0% | 15.4% |
+| **bridge** | 5,918 | **75.3%** | 76.6% | 16.7% |
+| **comparison** | 1,487 | **0.1%** | 1.3% | 8.7% |
+| All | 7,405 | 60.2% | 61.5% | 15.1% |
 
 **The graph does not beat the baseline or lose to it. It answers a different question.**
 
-On bridge questions it is four times the baseline, because a bridge question *is* a hop and
-a mention edge *is* that hop. On comparison questions it is fifty times worse than the
-baseline, because "were these two directors the same nationality" needs two unrelated pages
-and there is no edge between them — the question is not about a relationship.
+On bridge questions it is four and a half times the baseline, because a bridge question *is*
+a hop and a mention edge *is* that hop. On comparison questions one hop finds the pair in
+one case in a thousand — not weaker than the baseline, absent — because "were these two
+directors the same nationality" needs two unrelated pages and there is no edge between them.
+The question is not about a relationship.
 
 The bottom row is the trap. 60% against 15% reads as *the graph wins, use it everywhere*,
 and that would be the wrong call for a fifth of the traffic. **The routing decision, not the
@@ -36,11 +37,25 @@ retriever, is the product.**
 
 Two smaller results worth keeping:
 
-- **The second hop buys almost nothing** — 73.4% to 74.6%. Nearly all the value is in the
+- **The second hop buys almost nothing** — 75.3% to 76.6%. Nearly all the value is in the
   direct mention, which argues for a hop cap of one and against the unbounded walks this
   category usually ships.
-- **The median item has two mention edges** among ten paragraphs. The graph is sparse, which
-  is why traversal is cheap when it works at all.
+- **The median item has two mention edges** among ten paragraphs (mean 4.1). The graph is
+  sparse, which is why traversal is cheap when it works at all.
+
+### The 3,000-question sample was fine here, and that is worth explaining
+
+These numbers were first measured on 3,000 questions: bridge 73.4%, overall 60.0%. On all
+7,405 they are 75.3% and 60.2%. Two points and two tenths of a point.
+
+That is the opposite of what happened in [comms-desk](../05_comms-desk), where going from a
+twelve-meeting sample to the full corpus moved the headline from 62% to 87%. The difference
+is structural, not luck. **This measurement is a per-item rate** — each question is scored
+independently, so a sample estimates it honestly. **comms-desk's was a collision count over
+the whole pool** — wrong merges are pairs of different speakers, and a sample shrinks the
+pool that pairs are drawn from, so it can only undercount. Sampling is safe for the first
+kind and structurally misleading for the second, and knowing which one you have is the
+difference between a shortcut and a wrong answer.
 
 ### This contradicts what this README used to predict
 
@@ -52,7 +67,7 @@ other half, and the useful output is the split rather than either verdict.
 Reproduce it:
 
 ```bash
-cd 14_graph-clinic && python -m pytest tests/test_real_graph.py -q     # 9 passed
+cd 14_graph-clinic && python -m pytest tests/test_real_graph.py -q     # 12 passed
 ```
 
 ## Agents and write authority
@@ -108,7 +123,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 14_graph-clinic
-python -m pytest -q                      # 17 passed
+python -m pytest -q                      # 28 passed
 PYTHONPATH="src;../platform/src" python -m graphclinic.app    # console on http://127.0.0.1:8000
 ```
 
