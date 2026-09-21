@@ -9,6 +9,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+# GenBank omits the country on some records. It is the absence of a location,
+# never a place, and must never satisfy a multi-site requirement.
+UNKNOWN_SITE = "unknown"
+
 
 @dataclass(frozen=True)
 class Isolate:
@@ -72,6 +76,12 @@ def emerging(isolates: list[Isolate], since_day: int, min_sites: int = 2) -> lis
 
     Requiring several sites is the second guard: one site sequencing the same
     thing repeatedly is not emergence, whatever the count says.
+
+    A record with no location contributes no site. GenBank leaves the country
+    off 31 of the 898 genomes here, and counting ``unknown`` as a place lets a
+    single-site variant reach two sites by being partly unlabelled — the exact
+    false positive this function exists to remove, re-entering through the
+    missing-data door.
     """
     if min_sites < 1:
         raise ValueError("emergence needs at least one site")
@@ -79,7 +89,9 @@ def emerging(isolates: list[Isolate], since_day: int, min_sites: int = 2) -> lis
     sites: dict[str, set[str]] = {}
     earliest: dict[str, int] = {}
     for cluster in clusters:
-        sites.setdefault(cluster.sequence, set()).add(cluster.site)
+        sites.setdefault(cluster.sequence, set())
+        if cluster.site != UNKNOWN_SITE:
+            sites[cluster.sequence].add(cluster.site)
         earliest[cluster.sequence] = min(
             earliest.get(cluster.sequence, cluster.first_seen), cluster.first_seen
         )

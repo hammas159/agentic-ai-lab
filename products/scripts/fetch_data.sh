@@ -63,3 +63,25 @@ fetch "un-sanctions" \
 
 log "done"
 log "next: python scripts/make_invoices.py && python scripts/make_prices.py"
+
+# --- NCBI GenBank: the cotton leaf curl complex -----------------------------
+# Committed as data/clcuv_full.gb (7.5 MB). This regenerates it: every
+# near-full-length DNA-A genome of the complex, 898 records across 23 countries.
+# The corpus grew from a 60-genome subset because the small one could not
+# distinguish a working multi-site filter from one that rejects everything.
+fetch_clcuv() {
+  local E="https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+  local Q="Cotton+leaf+curl%5BAll+Fields%5D+AND+2600%3A2820%5BSLEN%5D"
+  local r wenv key cnt s
+  r=$(curl -s "$E/esearch.fcgi?db=nuccore&term=$Q&usehistory=y&retmax=0")
+  wenv=$(echo "$r" | grep -oP '(?<=<WebEnv>)[^<]+')
+  key=$(echo "$r" | grep -oP '(?<=<QueryKey>)[^<]+')
+  cnt=$(echo "$r" | grep -oP '(?<=<Count>)\d+' | head -1)
+  : > ../data/clcuv_full.gb
+  for s in $(seq 0 200 $((cnt - 1))); do
+    curl -s "$E/efetch.fcgi?db=nuccore&query_key=$key&WebEnv=$wenv&rettype=gb&retmode=text&retstart=$s&retmax=200" \
+      >> ../data/clcuv_full.gb
+    sleep 1   # NCBI allows 3 requests/second unauthenticated; stay well under
+  done
+  echo "clcuv_full.gb: $(grep -c '^LOCUS' ../data/clcuv_full.gb) records"
+}

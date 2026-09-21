@@ -1,24 +1,32 @@
 """agri-desk against the real GenBank corpus.
 
-`products/data/clcuv.gb` is 532 KB of real Cotton leaf curl virus records from
-NCBI, committed for offline reproduction. Every number asserted here was
-produced by running this code over that file.
+`products/data/clcuv_full.gb` is 7.5 MB of real Cotton leaf curl virus records
+from NCBI — 898 near-complete DNA-A genomes across 23 countries, every
+near-full-length genome of the cotton leaf curl complex in the database.
+
+Every number asserted here was produced by running this code over that file.
 """
 
 import pytest
 
-from agridesk.domain import collapse_clonal, distinct_variants, emerging, false_alarm_rate
+from agridesk.domain import (
+    UNKNOWN_SITE,
+    collapse_clonal,
+    distinct_variants,
+    emerging,
+    false_alarm_rate,
+)
 from agridesk.genbank import read
 from agridesk.sources import DATA, batches, corpus, isolates, surveillance
 
 pytestmark = pytest.mark.skipif(not DATA.exists(), reason="corpus not on disk")
 
-WINDOW = 7518  # the median collection day in this corpus
+WINDOW = 4749  # the median collection day in this corpus
 
 
-def test_the_corpus_parses():
+def test_the_whole_corpus_parses():
     records = corpus()
-    assert len(records) == 60
+    assert len(records) == 898
     assert all(r.sequence for r in records)
     assert all(r.accession for r in records)
 
@@ -28,14 +36,14 @@ def test_geo_loc_name_is_read_not_the_retired_country_field():
     # leaves every site "unknown", which silently merges every place into one
     # stratum and breaks both collapsing and emergence.
     sites = {r.site for r in corpus()}
-    assert sites == {"Pakistan", "India", "China"}
+    assert len(sites) == 24  # 23 countries and the unlabelled ones
+    assert {"Pakistan", "India", "China", "Burkina Faso", "Sudan"} <= sites
 
 
 def test_the_documented_eight_genome_submission_is_present():
     # clcuv-surveillance/haplotype.py records this case by accession:
     # ON312781-ON312788, eight genomes, one submission, one field, one
-    # haplotype. The accession prefix alone spans two submissions, so filter on
-    # the label.
+    # haplotype. Still intact after the corpus grew fifteenfold.
     s2 = [r for r in corpus() if r.isolate.startswith("CLCMV/S2-")]
     assert sorted(r.accession for r in s2) == [f"ON3127{n}" for n in range(81, 89)]
     assert {r.submission for r in s2} == {"CLCMV/S"}
@@ -48,43 +56,79 @@ def test_the_neighbouring_submission_is_clonal_too():
     assert len({r.sequence for r in nia}) == 1
 
 
-def test_collapsing_removes_a_third_of_the_corpus():
+def test_collapsing_removes_the_resequenced_records():
     iso = isolates()
-    assert distinct_variants(iso, collapse=False) == 60
-    assert distinct_variants(iso, collapse=True) == 41
-    # 19 of 60 records are a sequence already seen at the same site.
+    assert distinct_variants(iso, collapse=False) == 898
+    assert distinct_variants(iso, collapse=True) == 795
+    # 103 records are a sequence already seen at the same site.
 
 
 def test_the_largest_clonal_group_is_the_documented_one():
     clonal = sorted(
-        (c for c in collapse_clonal(isolates()) if c.clonal),
-        key=lambda c: -c.size,
+        (c for c in collapse_clonal(isolates()) if c.clonal), key=lambda c: -c.size
     )
-    assert [c.size for c in clonal] == [8, 5, 3, 3, 3, 2, 2]
-    assert clonal[0].size == 8
+    assert len(clonal) == 64
+    assert [c.size for c in clonal[:7]] == [8, 7, 7, 7, 6, 5, 5]
 
 
-def test_every_naive_emergence_call_is_spurious():
-    # THE FINDING. Ten distinct sequences appear in the window and look like
-    # emerging variants. Requiring a variant to show at more than one site
-    # leaves none of them standing.
+def test_almost_every_naive_emergence_call_is_spurious():
+    # THE FINDING. 422 distinct sequences appear in the window and look like
+    # emerging variants. Requiring a variant at more than one site leaves 2.
     iso = isolates()
-    assert len(emerging(iso, WINDOW, min_sites=1)) == 10
-    assert emerging(iso, WINDOW, min_sites=2) == []
-    assert false_alarm_rate(iso, WINDOW, min_sites=2) == 1.0
+    assert len(emerging(iso, WINDOW, min_sites=1)) == 422
+    assert len(emerging(iso, WINDOW, min_sites=2)) == 2
+    assert false_alarm_rate(iso, WINDOW, min_sites=2) == pytest.approx(0.9954, abs=0.002)
+
+
+def test_and_the_two_that_survive_are_real():
+    # This is what the old 60-genome corpus could not show. There, the filter
+    # removed 10 of 10 — and a filter that rejects everything is
+    # indistinguishable from a broken one. Here two variants survive, and both
+    # are the same sequence found in both Pakistan and India: cross-border
+    # spread, which is what emergence in this complex actually looks like.
+    iso = isolates()
+    survivors = emerging(iso, WINDOW, min_sites=2)
+    assert len(survivors) == 2
+    for sequence in survivors:
+        sites = {i.site for i in iso if i.sequence == sequence}
+        assert sites == {"Pakistan", "India"}
+    accessions = {i.id for i in iso if i.sequence in survivors}
+    assert {"PV769583", "MG373556", "KM096469"} <= accessions
+
+
+def test_a_third_site_is_a_threshold_nobody_meets():
+    assert emerging(isolates(), WINDOW, min_sites=3) == []
+
+
+def test_an_unlabelled_record_is_not_a_second_site():
+    # GenBank omits the country on 31 of the 898 genomes. Counting "unknown" as
+    # a place lets a single-site variant reach two sites by being partly
+    # unlabelled — the false positive this guard exists to remove, coming back
+    # in through the missing-data door. Four variants sit exactly there.
+    iso = isolates()
+    assert sum(1 for i in iso if i.site == UNKNOWN_SITE) == 31
+    by_sequence: dict[str, set[str]] = {}
+    for i in iso:
+        by_sequence.setdefault(i.sequence, set()).add(i.site)
+    borderline = [
+        s for s, sites in by_sequence.items() if len(sites) == 2 and UNKNOWN_SITE in sites
+    ]
+    assert len(borderline) == 4
+    reported = set(emerging(iso, 0, min_sites=2))
+    assert not [s for s in borderline if s in reported]
 
 
 def test_receipts_are_one_per_observation_not_one_per_record():
-    # Handing the gate 60 receipts for 41 observations is the same
+    # Handing the gate 898 receipts for 795 observations is the same
     # double-counting the product exists to catch, moved into the evidence list.
     receipts = surveillance({})
-    assert len(receipts) == 41
-    assert len(set(receipts)) == 41
+    assert len(receipts) == 795
+    assert len(set(receipts)) == 795
     assert all(r in {x.accession for x in corpus()} for r in receipts)
 
 
 def test_batches_are_the_sampling_unit():
-    assert len(batches({})) == 29
+    assert len(batches({})) == 416
     assert "CLCMV/S" in batches({})
 
 

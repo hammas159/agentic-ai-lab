@@ -8,23 +8,38 @@ serves the shared operator console at `/`.
 
 ## The finding
 
-**Measured, on 60 real Cotton leaf curl virus genomes from NCBI GenBank.**
+**Measured on all 898 near-complete Cotton leaf curl virus genomes in NCBI GenBank** —
+every DNA-A genome of the cotton leaf curl complex between 2,600 and 2,820 nt, across
+23 countries.
 
 | | |
 |---|---|
-| Records in the corpus | 60 |
-| Distinct sequences, counted naively | **60** |
-| Distinct observations after collapsing clonal duplicates | **41** |
-| Records that were a sequence already seen at that site | 19 (32%) |
-| Largest clonal group | **8 identical genomes** — `ON312781`–`ON312788`, one submission |
-| Variants that look like they are emerging | **10** |
-| Variants still emerging once a variant must appear at more than one site | **0** |
-| False-alarm rate | **1.000** |
+| Records in the corpus | 898 |
+| Distinct sequences, counted naively | **898** |
+| Distinct observations after collapsing clonal duplicates | **795** |
+| Records that were a sequence already seen at that site | 103 |
+| Clonal groups | **64** — largest is `ON312781`–`ON312788`, eight genomes, one submission |
+| Variants that look like they are emerging | **422** |
+| Variants still emerging once a variant must appear at more than one site | **2** |
+| **False-alarm rate** | **0.9954** |
 
-Every one of the ten emergence calls is spurious. The signal was the same isolate sequenced
+**425 of 427 emergence calls are spurious.** The signal is the same isolate sequenced
 repeatedly and submitted as a batch: `CLCMV/S2-1` through `CLCMV/S2-8` are eight genomes
 from one field, one submission and one haplotype, and a neighbouring batch
-(`CLCMV/NIA-*`, 5 records) is identical to itself as well.
+(`CLCMV/NIA-*`, 5 records) is identical to itself as well. There are 64 such groups.
+
+### The two that survive are the reason the corpus had to grow
+
+This was first measured on a 60-genome subset spanning three countries, where the filter
+removed **10 of 10**. That looked like a stronger result and was in fact a much weaker one:
+**a filter that rejects 100% of its input cannot be told apart from a filter that is
+broken.** The small corpus could not show the guard keeping anything.
+
+On the full corpus two variants survive, and both are the same sequence found in **both
+Pakistan and India** — `PV769583` with `MG373556`, and `KX656799`/`KX656801` with
+`KM096469`. Cross-border spread of one haplotype is what emergence in this complex actually
+looks like. The guard is not "reject everything"; it is "reject everything that is one
+field sequenced eight times", and now there is evidence of the difference.
 
 An advisory agent reading the uncollapsed feed warns a farmer about an outbreak that is not
 happening. That is not a hypothetical: `clcuv-surveillance` recorded exactly this failure
@@ -38,16 +53,23 @@ one wire story republished by twelve outlets as twelve corroborating sources.
 Reproduce it:
 
 ```bash
-cd 19_agri-desk && python -m pytest tests/test_real_corpus.py -q     # 11 passed
+cd 19_agri-desk && python -m pytest tests/test_real_corpus.py -q     # 14 passed
 ```
 
-### One thing that had to be fixed to get this number
+### Two things that had to be fixed to get this number
 
-GenBank renamed `/country` to `/geo_loc_name`. The first version of the reader looked for
-the old name, found nothing, and defaulted every record's site to `"unknown"` — which
-merges Pakistan, India and China into one stratum. That over-collapses clonal duplicates
-*and* hides the multi-site spread emergence is defined by, in opposite directions at once,
-while looking like it works. There is a test pinning the three real sites.
+**GenBank renamed `/country` to `/geo_loc_name`.** The first version of the reader looked
+for the old name, found nothing, and defaulted every record's site to `"unknown"` — which
+merges every country into one stratum. That over-collapses clonal duplicates *and* hides
+the multi-site spread emergence is defined by, in opposite directions at once, while looking
+like it works. There is a test pinning the real site count.
+
+**An unlabelled record is not a second site.** GenBank omits the country on 31 of the 898
+genomes, and counting `"unknown"` as a place lets a single-site variant reach two sites by
+being partly unlabelled — the exact false positive the multi-site guard exists to remove,
+re-entering through the missing-data door. Four variants sit precisely there. None of them
+was being reported when this was found, which is luck rather than correctness, so there is
+a test that would catch it in any window.
 
 ## Agents and write authority
 
@@ -86,7 +108,10 @@ is closed, so a column added next month does not quietly become writable.
 
 ## Real data
 
-**Real NCBI GenBank sequences** already committed in `clcuv-surveillance` (`data/clcuv.gb`, 532 KB), plus published agronomy guidance and open market-price feeds. The surveillance half of this product is already built and measured.
+**Real NCBI GenBank sequences** — `data/clcuv_full.gb`, 7.5 MB, 898 genomes, refetchable with
+`db=nuccore, term="Cotton leaf curl"[All Fields] AND 2600:2820[SLEN]`. Plus published
+agronomy guidance and open market-price feeds. The surveillance half of this product is
+already built and measured.
 
 ## The deterministic core
 
@@ -102,7 +127,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 19_agri-desk
-python -m pytest -q                      # 18 passed
+python -m pytest -q                      # 32 passed
 PYTHONPATH="src;../platform/src" python -m agridesk.app    # console on http://127.0.0.1:8000
 ```
 

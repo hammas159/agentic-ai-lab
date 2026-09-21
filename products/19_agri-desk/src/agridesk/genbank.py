@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
+from .domain import UNKNOWN_SITE
+
 _QUALIFIER = re.compile(r'/(\w+)="([^"]*)"')
 _MONTHS = {
     m: i
@@ -60,7 +62,7 @@ class Record:
         if self.geo:
             return self.geo.split(":")[0].strip()
         parts = self.isolate.split("_")
-        return parts[1] if len(parts) >= 2 else "unknown"
+        return parts[1] if len(parts) >= 2 else UNKNOWN_SITE
 
     @property
     def submission(self) -> str:

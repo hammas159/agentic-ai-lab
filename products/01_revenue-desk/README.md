@@ -18,21 +18,46 @@ one, the same *mechanism* is measured on the largest real corpus of dated edits 
 A revert is a line that went A, then B, then back to A. Not a rewrite, not churn — one edit
 undoing another, which is exactly what `detect_reverts` looks for on a deal record.
 
-| | |
-|---|---:|
-| Repositories surveyed | 12 |
-| Line edits examined | **232,160** |
-| True reverts (A to B to A) | 234 |
-| **Revert rate** | **0.10%** |
-| Median gap between removal and restoration | 1 commit (max 23) |
+**Measured over all 35 repositories, full history** — 424 commits, 583,531 line edits.
 
-**One edit undoes another about once in a thousand — in a medium with diffs, atomic commits
-and review.** That is the floor such controls achieve, and it is the useful number: a CRM
-field has none of them. No diff is shown, no commit is atomic, nothing is reviewed, and the
-writer is often a process rather than a person.
+| | Naive | **Honest** |
+|---|---:|---:|
+| Line edits counted | 583,531 | **263,631** |
+| Reverts found | 869 | **27** |
+| **Revert rate** | 0.1489% | **0.0102%** |
+| | | *one in 9,764* |
 
-The spread between repositories is more than twenty-fold. Exploratory work rewrites itself;
-finished work does not.
+**The same history, read two ways, differs by 14.5x.** The gap is not a detail of the
+corpus — it is two decisions about what counts as an edit, and both of them are decisions
+this product has to make on a CRM where agents and people write into the same records.
+
+**1. Machine-written files are 55% of the edits and 97% of the reverts.** Committed datasets
+and regenerated `results.json` files are not somebody's judgement. Every one of the 1,457
+reverts in JSON came from 13 result files — `mcp-lab/projects/03_bfcl_tool_calling/results.json`
+alone contributed 553. A number returning to a previous value across re-runs is a script
+re-emitting its own output, not one writer undoing another. Committed CSV, TXT, LOG and
+GenBank data contributed **206,000 edits and zero reverts**, quietly diluting the
+denominator at the same time.
+
+**2. A line removed and restored inside one commit never moved.** With `-U0` git reports a
+line that shifted within a file as a remove/add pair. Reading that as a revert accounted for
+**86%** of what remained. Undoing is a relationship *between* commits, so same-commit pairs
+now cancel and the three events must land on three increasing commits.
+
+What survives is small and real: **27 reverts in 263,631 hand-written line edits**, median
+gap one commit, maximum 23. **28 of the 34 substantial repositories contain none at all.**
+That is the floor a medium with diffs, atomic commits and review achieves — and it is the
+useful number precisely because a CRM field has none of them. No diff is shown, no commit is
+atomic, nothing is reviewed, and the writer is often a process rather than a person.
+
+### Why this is the product's central lesson, not a measurement footnote
+
+Both corrections say the same thing: **if you do not separate machine-written changes from
+human ones, you measure the machine arguing with itself.** A revert dashboard pointed at a
+CRM where agents write fields would report a rate an order of magnitude too high, and
+almost all of it would be agents rewriting their own enrichment. That is why field-level
+ownership — an agent may propose, never overwrite a human-owned field — is the mechanism
+rather than an alerting threshold.
 
 ### What is not claimed
 
@@ -46,17 +71,26 @@ because a number here proves a CRM is worse.
 Saying so is the point. A README claiming a measured CRM revert rate would be claiming a
 measurement that was never made.
 
-### One thing the test caught
+### Three things the tests caught
 
-`find_reverts` originally relied on the git parser to skip trivial lines, so a caller
-building edits directly could get a closing brace reported as a revert. Whether a line is
-substantial enough to count is a property of revert detection, not of where the edits came
-from, and it now lives there.
+- `find_reverts` originally relied on the git parser to skip trivial lines, so a caller
+  building edits directly could get a closing brace reported as a revert. Whether a line is
+  substantial enough to count is a property of revert detection, not of where the edits came
+  from, and it now lives there.
+- **The survey was capped at 12 repositories, alphabetically.** A revert is a *pair* of edits
+  drawn from the history pool, so shrinking the pool can only undercount — and did: 12
+  repositories reported 0.063% where all 35 report 0.285% on the same definition. There is
+  now a test asserting the capped rate is below the full one, so the bias is recorded rather
+  than merely fixed.
+- The two corrections above pull in opposite directions, which is why neither was noticed
+  for so long. Widening the corpus raised the number 4.5x; excluding generated files and
+  same-commit pairs cut it 14.5x. The old assertions were loose bands (`< 0.005`, `> 50`) and
+  passed comfortably throughout.
 
 Reproduce it:
 
 ```bash
-cd 01_revenue-desk && python -m pytest tests/test_real_reverts.py -q     # 8 passed
+cd 01_revenue-desk && python -m pytest tests/test_real_reverts.py -q     # 13 passed
 ```
 
 ## Agents and write authority
@@ -113,7 +147,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 01_revenue-desk
-python -m pytest -q                      # 21 passed
+python -m pytest -q                      # 33 passed
 PYTHONPATH="src;../platform/src" python -m revenue.app    # console on http://127.0.0.1:8000
 ```
 

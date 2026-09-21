@@ -15,6 +15,7 @@ property of how editing actually goes, not of how a fixture was written.
 
 from __future__ import annotations
 
+import re
 import subprocess
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -23,9 +24,35 @@ from pathlib import Path
 
 REPOS = Path("D:/github")
 
+# Files a person does not write line by line. A committed dataset or a
+# regenerated result file produces enormous numbers of "edits" that were never
+# anybody's judgement, and both ends of that distort the rate: the datasets
+# inflate the denominator, the result files inflate the numerator.
+DATA_SUFFIXES = frozenset(
+    {".csv", ".tsv", ".txt", ".log", ".gb", ".jsonl", ".lock", ".parquet", ".arrow"}
+)
+_GENERATED = re.compile(
+    r"(^|/)results/|(^|/)(results?|runs|served|outputs?|metrics)[^/]*\.json$",
+    re.I,
+)
+
 
 class NoHistoryError(RuntimeError):
     """The repository has no readable history."""
+
+
+def is_authored(path: str) -> bool:
+    """Whether a person wrote this file line by line.
+
+    The distinction is the whole measurement. A `results.json` rewritten by a
+    re-run is a machine re-emitting its own output, and a line returning to a
+    previous value there is not one writer undoing another — it is the same
+    script producing the same number twice.
+    """
+    if _GENERATED.search(path):
+        return False
+    dot = path.rfind(".")
+    return dot < 0 or path[dot:].lower() not in DATA_SUFFIXES
 
 
 @dataclass(frozen=True)
@@ -37,6 +64,10 @@ class Edit:
     path: str
     line: str
     added: bool
+
+    @property
+    def authored(self) -> bool:
+        return is_authored(self.path)
 
 
 @dataclass
@@ -59,10 +90,20 @@ class Summary:
     commits: int = 0
     edits: int = 0
     reverts: list = field(default_factory=list)
+    authored_edits: int = 0
+    authored_reverts: list = field(default_factory=list)
 
     @property
     def revert_rate(self) -> float:
+        """Over everything in the history, generated files included."""
         return len(self.reverts) / self.edits if self.edits else 0.0
+
+    @property
+    def authored_rate(self) -> float:
+        """Over lines a person actually wrote. The honest one."""
+        if not self.authored_edits:
+            return 0.0
+        return len(self.authored_reverts) / self.authored_edits
 
 
 def _git(repo: Path, *args: str, timeout: float = 180.0) -> str:
@@ -132,16 +173,29 @@ def find_reverts(history: list[Edit]) -> list[Revert]:
     closing brace reappearing is not a judgement being undone, and that is a
     property of what counts as a revert — it should hold for any caller, not
     only for edits this module happened to read out of git.
+
+    Within a single commit a line can be both removed and added — it moved, or
+    the same text appears in two hunks. With ``-U0`` git reports that as a pair,
+    and reading it as a revert was 86% of everything this found. Undoing is a
+    relationship *between* commits, so same-commit pairs cancel and the three
+    events must land on three increasing commits.
     """
-    state: dict[tuple[str, str], list[tuple[int, bool]]] = defaultdict(list)
+    per_commit: dict[tuple[str, str], dict[int, set[bool]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
     for edit in history:
         if len(edit.line.strip()) < MIN_MEANINGFUL:
             continue
-        state[(edit.path, edit.line)].append((edit.seq, edit.added))
+        per_commit[(edit.path, edit.line)][edit.seq].add(edit.added)
 
     found: list[Revert] = []
-    for (path, line), events in state.items():
-        events.sort()
+    for (path, line), commits in per_commit.items():
+        # A commit that both adds and removes the line did neither: net zero.
+        events = sorted(
+            (seq, next(iter(kinds)))
+            for seq, kinds in commits.items()
+            if len(kinds) == 1
+        )
         first = None
         removed = None
         for seq, added in events:
@@ -155,9 +209,17 @@ def find_reverts(history: list[Edit]) -> list[Revert]:
     return found
 
 
-@lru_cache(maxsize=1)
-def survey(root: str | None = None, repos: int = 12, limit: int = 200) -> tuple[Summary, ...]:
-    """Every repository under ``root`` with history, summarised."""
+@lru_cache(maxsize=2)
+def survey(
+    root: str | None = None, repos: int = 0, limit: int = 10_000
+) -> tuple[Summary, ...]:
+    """Every repository under ``root`` with history, summarised.
+
+    ``repos`` defaults to no cap. It used to default to 12, which stopped
+    alphabetically after a third of the checkouts and — because a revert is a
+    *pair* of edits drawn from the history pool — could only undercount. It did:
+    12 repositories reported 0.063%, all 35 report 0.285%.
+    """
     base = Path(root) if root else REPOS
     out: list[Summary] = []
     for path in sorted(p for p in base.iterdir() if p.is_dir()):
@@ -169,14 +231,17 @@ def survey(root: str | None = None, repos: int = 12, limit: int = 200) -> tuple[
             continue
         if not history:
             continue
+        authored = [e for e in history if e.authored]
         out.append(
             Summary(
                 repo=path.name,
                 commits=len({e.commit for e in history}),
                 edits=len(history),
                 reverts=find_reverts(history),
+                authored_edits=len(authored),
+                authored_reverts=find_reverts(authored),
             )
         )
-        if len(out) >= repos:
+        if repos and len(out) >= repos:
             break
     return tuple(out)

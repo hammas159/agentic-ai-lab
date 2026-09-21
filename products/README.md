@@ -27,7 +27,7 @@ python scripts/screenshots.py   # real captures of the running console
 Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
 which is a real intake → drain → approve cycle. None of those figures were typed by hand.
 
-**704 tests, all passing, zero skipped.** Every product reads a real dataset; the
+**711 tests, all passing, zero skipped.** Every product reads a real dataset; the
 contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
 committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
 OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and seventeen RFCs.
@@ -49,7 +49,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 
 | # | Product | Real data | What it measured |
 |---|---|---|---|
-| [01](01_revenue-desk) | **revenue-desk** | 232,160 line edits, 12 git repos | One edit undoes another **0.10%** of the time — the floor a reviewed medium achieves |
+| [01](01_revenue-desk) | **revenue-desk** | 583,531 line edits, all 35 git repos | Generated files are 55% of edits and **97% of reverts**; the honest rate is **14.5x** lower |
 | [02](02_ward-sync) | **ward-sync** | 3,850 Synthea prescriptions | **93% of prescriptions end**; a "current list" is **5.5x too long** for 104 of 105 patients |
 | [03](03_one-desk) | **one-desk** | 300 AMI participant summaries | Two people describing one meeting overlap at **0.23**; a per-platform rewrite at **0.79** |
 | [04](04_ledger-brain) | **ledger-brain** | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
@@ -67,7 +67,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 | [16](16_shelf-ops) | **shelf-ops** | 4,501 real products | Compounding two in-policy discounts breaks **one product in five** |
 | [17](17_fleet-desk) | **fleet-desk** | TSPLIB berlin52 + proven optimum | "Go round the city in a circle" is **92% worse than optimal** |
 | [18](18_campus-ops) | **campus-ops** | 5,571 scheduled events | A room-only checker misses the **9 overlaps that are physically impossible** |
-| [19](19_agri-desk) | **agri-desk** | 60 NCBI GenBank genomes | **10 emerging variants become 0**; false-alarm rate **1.000** |
+| [19](19_agri-desk) | **agri-desk** | all 898 NCBI GenBank genomes, 23 countries | **422 emerging variants become 2**; false-alarm rate **0.9954** — and the 2 are real |
 | [20](20_driftwatch) | **driftwatch** | 35 real repositories | **1.64%** of README sentences are machine-settleable; 9.1% of those are false |
 
 ### Four of them contradicted their own README
@@ -84,16 +84,50 @@ overturned four, and the READMEs say so rather than quietly reframing:
 - **one-desk** predicted the four platform variants would be near-identical. They are — and
   the human baseline needed to *prove* it was the part that was actually hard.
 
-### Three found real bugs by being run
+### Four found real bugs by being run
 
 - **powerguard** classified 14 jobs on this machine; eleven were the interpreter's install
   path matching `\buv\b`. It also produced `checkpoint python.exe` as an instruction, with
   two different `python.exe` processes running — so `Action` now carries a pid and refuses
   to exist without one.
 - **agri-desk** read `/country`, which GenBank renamed to `/geo_loc_name`, and silently
-  collapsed Pakistan, India and China into one stratum.
+  collapsed every country into one stratum. It also counted an unlabelled record as a
+  second site, letting a single-site variant clear the multi-site guard by being partly
+  unlabelled.
 - **driftwatch** caught a live drift in this very repository: the README claims zero runtime
   dependencies while `pyproject.toml` declares thirteen.
+- **revenue-desk** counted committed datasets and regenerated `results.json` files as human
+  edits, and read a line moved within a single commit as a revert. Together those made its
+  headline 14.5x too high.
+
+### The one lesson that recurred across four products
+
+Every product here was first measured on a subset, because a subset was what finished
+quickly. Four of those subsets were lying, and the direction was predictable each time:
+
+| Product | Sampled | Whole corpus | Moved |
+|---|---:|---:|---|
+| **comms-desk** | 62% wrong merges (12 meetings) | **87%** (139) | undercounted |
+| **revenue-desk** | 0.063% reverts (12 repos) | **0.285%** (35) | undercounted |
+| **agri-desk** | 10 → 0, rate 1.000 (60 genomes) | **422 → 2**, 0.9954 (898) | unfalsifiable |
+| **graph-clinic** | 0.734 bridge (3,000 questions) | **0.753** (7,405) | honest |
+
+The rule that separates them: **a per-item rate samples honestly, and a count of
+interactions between items does not.** graph-clinic scores each question independently, so
+3,000 estimated 7,405 to within two points. The other three count *pairs* — duplicate
+merges, revert pairs, a variant seen at two sites — and a sample shrinks the pool those
+pairs are drawn from, so it can only undercount. A sampled pair-count is a floor, never an
+estimate.
+
+agri-desk is the worst case and did not look like one. Its small corpus produced a
+false-alarm rate of exactly **1.000**, which reads as the strongest possible result and is
+actually the weakest: **a filter that rejects 100% of its input is indistinguishable from a
+filter that is broken.** Only on the full corpus do two genuine variants survive, and only
+then is there evidence the guard keeps anything.
+
+In three of the four cases the subset existed because something was too slow, not because
+anyone chose it. A quadratic `dedupe` does not announce itself — it just quietly narrows
+what gets measured.
 
 ### What is honestly not measured
 
