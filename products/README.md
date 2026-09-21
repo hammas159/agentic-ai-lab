@@ -27,7 +27,7 @@ python scripts/screenshots.py   # real captures of the running console
 Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
 which is a real intake → drain → approve cycle. None of those figures were typed by hand.
 
-**733 tests, all passing, zero skipped.** Every product reads a real dataset; the
+**740 tests, all passing, zero skipped.** Every product reads a real dataset; the
 contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
 committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
 OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and seventeen RFCs.
@@ -51,7 +51,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 |---|---|---|---|
 | [01](01_revenue-desk) | **revenue-desk** | 714,164 line edits, every git repo on disk | Generated files are **97% of reverts**; the honest rate is 12x lower and doesn't drift |
 | [02](02_ward-sync) | **ward-sync** | 3,850 Synthea prescriptions | **93% of prescriptions end**; a "current list" is **5.5x too long** for 104 of 105 patients |
-| [03](03_one-desk) | **one-desk** | 300 AMI participant summaries | Two people describing one meeting overlap at **0.23**; a per-platform rewrite at **0.79** |
+| [03](03_one-desk) | **one-desk** | 300 AMI summaries + 48 real 14B generations | The human baseline is **0.073 wide** (p<0.0001); four variants differ as much as two people do |
 | [04](04_ledger-brain) | **ledger-brain** | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
 | [05](05_comms-desk) | **comms-desk** | 104,923 AMI dialogue acts, all 139 meetings | Ignoring who spoke makes 786 merges, **686 of them wrong** |
 | [06](06_oncall-mate) | **oncall-mate** | 10,000 Loghub lines, 5 systems | Compression ratio spans **115x** with the templater fixed |
@@ -60,7 +60,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 | [09](09_hermes-home) | **hermes-home** | LoCoMo, 1,982 questions | Median answer lives **14 sessions back**; an 8-session window answers **28%** |
 | [10](10_kyc-floor) | **kyc-floor** | OFAC 8,650 + UN 2,163 labelled aliases | Skeletons buy **+19.8 points for zero precision cost** — and **+18.6 on a second list** |
 | [11](11_watchtower) | **watchtower** | 30,098 OSV PyPI advisories | "Below the highest fix" is wrong **15.4%** of the time — and **cannot fire at all** on 39% of them |
-| [12](12_powerguard) | **powerguard** | this machine, 392 processes | **3 of 3** expensive jobs are another session's; it plans **0** actions against them |
+| [12](12_powerguard) | **powerguard** | this machine + 4,000 generated states | **0** actions ever aimed at another session's pid — except hibernate, which reaches everything |
 | [13](13_swarm-lab) | **swarm-lab** | N workers on real Redis | Uncoordinated waste is exactly **1 - 1/N**; 95% at N=21 |
 | [14](14_graph-clinic) | **graph-clinic** | all 7,405 HotpotQA questions | Graph wins **4.5x** on bridge questions and finds **1 in 1,000** comparison ones |
 | [15](15_claims-floor) | **claims-floor** | 6,000 eCFR versions, 6 regulators | Returning the current text is wrong **49%** of the time, by a median of **2.5 years** |
@@ -103,7 +103,7 @@ Both also found what does *not* transfer: kyc-floor's screening threshold costs 
 positives on OFAC and 7.5% on the UN, so the ranking of rules is portable and the cut-off
 is not.
 
-### Five found real bugs by being run
+### Six found real bugs by being run
 
 - **powerguard** classified 14 jobs on this machine; eleven were the interpreter's install
   path matching `\buv\b`. It also produced `checkpoint python.exe` as an instruction, with
@@ -119,6 +119,10 @@ is not.
   NuGet, crates.io and Go packages into a PyPI scan and ordering Go pseudo-versions with a
   PEP 440 key. It also had no notion that 39% of the database is malicious-package reports
   rather than vulnerabilities.
+- **powerguard** guarantees it never signals a process it does not own, and then hibernates
+  the whole machine, which reaches every process on it. Found by generating 4,000 machine
+  states — it needs a flat battery *and* another session's job at once, which this machine
+  has never been in while anyone looked.
 - **revenue-desk** counted committed datasets and regenerated `results.json` files as human
   edits, and read a line moved within a single commit as a revert. Together those made its
   headline an order of magnitude too high — and left it drifting 18% when a dataset was

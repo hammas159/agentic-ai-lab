@@ -93,6 +93,26 @@ def unowned_at_risk(jobs: list[Job]) -> list[Job]:
     return [j for j in jobs if not j.owned and j.kind in (TRAINING, DOWNLOAD)]
 
 
+def collateral(jobs: list[Job]) -> list[Job]:
+    """Unowned work that hibernating the system would suspend anyway.
+
+    The per-process guarantee — never signal a process we do not own — is real
+    and it is not the whole story. `hibernate` has no pid because it is not
+    aimed at a process; it stops every process on the machine, ours and theirs,
+    and no ownership check applies to it.
+
+    Hibernation is not a kill: Windows writes memory to disk and processes
+    resume. But a CUDA context does not reliably survive it and an open socket
+    does not survive it at all, so another session's training run or download is
+    genuinely at risk from an action this custodian took.
+
+    The honest response is not to refuse — losing mains with a flat battery ends
+    that work regardless, and unhibernated it ends worse. It is to say so, which
+    is what `plan` puts in the hibernate action's reason.
+    """
+    return unowned_at_risk(jobs)
+
+
 def plan(
     machine: Machine,
     jobs: list[Job],
@@ -132,14 +152,19 @@ def plan(
     flat = machine.battery_pct <= t.hibernate_below_pct
     brief = machine.minutes_remaining <= t.hibernate_below_minutes
     if flat or brief:
-        actions.append(
-            Action(
-                HIBERNATE,
-                "system",
-                f"battery {machine.battery_pct}%, "
-                f"{machine.minutes_remaining} min left",
-            )
+        reason = (
+            f"battery {machine.battery_pct}%, {machine.minutes_remaining} min left"
         )
+        # The one action with no pid and machine-wide reach. Everything else
+        # here is refused on a process we do not own; this is not, so it names
+        # what it will take down with it rather than presenting itself as safe.
+        others = collateral(jobs)
+        if others:
+            named = ", ".join(f"{j.name}({j.pid})" for j in sorted(others, key=lambda j: j.pid))
+            reason += (
+                f"; SUSPENDS {len(others)} job(s) belonging to another session: {named}"
+            )
+        actions.append(Action(HIBERNATE, "system", reason))
     return actions
 
 

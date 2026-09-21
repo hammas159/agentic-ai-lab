@@ -27,6 +27,34 @@ sleep the displays. It reports the rest and reaches for none of it.
 That is the whole product. A custodian that signals a PID it did not start is worse than no
 custodian.
 
+**But "3 of 3" is a snapshot, and a snapshot is not a guarantee.** The table above describes
+this machine at one moment. The guarantee is asserted separately over **4,000 generated
+machine states** — both power states, the whole battery range, every mix of owned and
+unowned work — and in none of them is an action ever aimed at a pid this custodian does not
+own.
+
+### 1b · The generated states found the hole in that guarantee
+
+`plan` refuses to signal a process it does not own. Then, on a flat battery, it hibernates
+the machine — **and hibernation reaches every process on it.** It carries no pid because it
+is not aimed at a process, so no ownership check applies to it.
+
+Hibernation is not a kill: Windows writes memory to disk and processes resume. But a CUDA
+context does not reliably survive it and an open socket does not survive it at all, so
+another session's training run or download is genuinely at risk from an action this
+custodian took. The per-process guarantee was real and it was not the whole story.
+
+The fix is not to refuse. Losing mains on a flat battery ends that work anyway, and
+unhibernated it ends worse. The fix is to say so, so the hibernate action now reads:
+
+```
+hibernate system — battery 5%, 3 min left; SUSPENDS 1 job(s) belonging to
+                   another session: ollama.exe(99)
+```
+
+A live test could never have found this: it needs a flat battery *and* another session's
+job, and this machine has not been on battery while that was true.
+
 ### 2 · A classifier that reads an install path is reading noise
 
 The first version matched the raw command line and found **14** expensive jobs. Eleven were
@@ -59,7 +87,7 @@ made.
 Reproduce it:
 
 ```bash
-cd 12_powerguard && python -m pytest tests/test_real_machine.py -q     # 10 passed
+cd 12_powerguard && python -m pytest tests/test_real_machine.py -q     # 17 passed
 ```
 
 ## Agents and write authority
@@ -114,7 +142,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 12_powerguard
-python -m pytest -q                      # 20 passed
+python -m pytest -q                      # 35 passed
 PYTHONPATH="src;../platform/src" python -m powerguard.app    # console on http://127.0.0.1:8000
 ```
 

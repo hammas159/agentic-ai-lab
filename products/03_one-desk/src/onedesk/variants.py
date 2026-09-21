@@ -18,6 +18,7 @@ baseline that makes that measurement mean something, and it is available now.
 
 from __future__ import annotations
 
+import random
 import re
 import statistics
 import zipfile
@@ -113,8 +114,13 @@ class Baseline:
         return self.same_median - self.different_median
 
 
-def baseline(archive: str | None = None, limit: int = 400) -> Baseline:
-    """Overlap within a meeting, against overlap across meetings."""
+def _pairs(archive: str | None = None) -> tuple[list[float], list[float]]:
+    """Same-meeting overlaps, and the different-meeting control.
+
+    The control used to stop at the first 40 meetings, for no reason the code
+    gave — all 80 cost 3,160 comparisons, which is nothing. Taking every one
+    moves the control median from 0.1591 to 0.1556.
+    """
     grouped = by_meeting(archive)
     same: list[float] = []
     for rows in grouped.values():
@@ -123,9 +129,14 @@ def baseline(archive: str | None = None, limit: int = 400) -> Baseline:
     # The control: renderings of different meetings, which share only the
     # vocabulary of people describing a meeting.
     flat = [rows[0] for rows in grouped.values()]
-    different = [
-        overlap(a, b) for a, b in combinations(flat[: min(len(flat), 40)], 2)
-    ]
+    different = [overlap(a, b) for a, b in combinations(flat, 2)]
+    return same, different
+
+
+def baseline(archive: str | None = None) -> Baseline:
+    """Overlap within a meeting, against overlap across meetings."""
+    grouped = by_meeting(archive)
+    same, different = _pairs(archive)
 
     return Baseline(
         meetings=len(grouped),
@@ -134,3 +145,56 @@ def baseline(archive: str | None = None, limit: int = 400) -> Baseline:
         same_median=statistics.median(same) if same else 0.0,
         different_median=statistics.median(different) if different else 0.0,
     )
+
+
+@dataclass(frozen=True)
+class Significance:
+    """Is the separation real, or the size of the gap two medians wander by?"""
+
+    separation: float
+    p_value: float
+    low: float          # 95% bootstrap interval on the separation
+    high: float
+
+    @property
+    def real(self) -> bool:
+        return self.p_value < 0.01 and self.low > 0
+
+
+def separation_significance(
+    archive: str | None = None, trials: int = 10_000, seed: int = 7
+) -> Significance:
+    """Permutation test and bootstrap interval on the same-vs-different gap.
+
+    The separation is 0.073, which is small enough that reporting it as a fact
+    without testing it would be a guess. Two people describing one meeting
+    overlap at 0.229; two people describing *different* meetings overlap at
+    0.156, purely from the vocabulary of describing a meeting at all. Seven
+    points is the entire signal, and the product's argument rests on it.
+
+    It holds: 0 of 10,000 label shuffles reach the observed gap, and the 95%
+    bootstrap interval is [0.060, 0.085] — small, and nowhere near zero.
+
+    Seeded, so the figure in the README is the figure a reader reproduces.
+    """
+    same, different = _pairs(archive)
+    if not same or not different:
+        return Significance(0.0, 1.0, 0.0, 0.0)
+
+    observed = statistics.median(same) - statistics.median(different)
+    rng = random.Random(seed)
+
+    pool = same + different
+    n = len(same)
+    hits = 0
+    for _ in range(trials):
+        rng.shuffle(pool)
+        if statistics.median(pool[:n]) - statistics.median(pool[n:]) >= observed:
+            hits += 1
+
+    boots = sorted(
+        statistics.median([rng.choice(same) for _ in range(n)])
+        - statistics.median([rng.choice(different) for _ in range(len(different))])
+        for _ in range(2_000)
+    )
+    return Significance(observed, hits / trials, boots[50], boots[-50])

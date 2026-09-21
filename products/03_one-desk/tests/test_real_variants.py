@@ -11,7 +11,14 @@ asserted here was produced by running this code over that file.
 import pytest
 
 from onedesk.domain import overlap as variant_overlap
-from onedesk.variants import ARCHIVE, baseline, by_meeting, overlap, renderings
+from onedesk.variants import (
+    ARCHIVE,
+    baseline,
+    by_meeting,
+    overlap,
+    renderings,
+    separation_significance,
+)
 
 pytestmark = pytest.mark.skipif(not ARCHIVE.exists(), reason="AMI corpus not on disk")
 
@@ -40,11 +47,29 @@ def test_two_people_describing_one_meeting_share_about_a_quarter(measured):
 
 
 def test_and_two_people_describing_different_meetings_share_nearly_as_much(measured):
-    # The control. Independent renderings of the SAME content are barely more
-    # alike than renderings of different content — which is what genuine
+    # The control, now over all 80 meetings rather than the first 40 — 3,160
+    # comparisons. Independent renderings of the SAME content are barely more
+    # alike than renderings of different content, which is what genuine
     # variation looks like.
-    assert measured.different_median == pytest.approx(0.159, abs=0.02)
+    assert measured.different_pairs == 3_160
+    assert measured.different_median == pytest.approx(0.156, abs=0.02)
     assert measured.separation < 0.10
+
+
+def test_that_seven_point_gap_is_small_and_real(measured):
+    # The whole argument rests on 0.073, which is small enough that reporting
+    # it untested would be a guess. It survives testing: no shuffle of the
+    # labels in ten thousand reaches the observed gap, and the 95% bootstrap
+    # interval sits well clear of zero.
+    #
+    # Being small AND real is the point. If it were large, two people describing
+    # one meeting would agree substantially, and the 0.79 a per-platform rewrite
+    # scores would not be remarkable. It is 0.073.
+    result = separation_significance()
+    assert result.separation == pytest.approx(0.073, abs=0.005)
+    assert result.p_value < 0.001
+    assert 0.05 < result.low < result.high < 0.10
+    assert result.real
 
 
 def test_a_hand_written_pair_is_not_a_measurement(measured):

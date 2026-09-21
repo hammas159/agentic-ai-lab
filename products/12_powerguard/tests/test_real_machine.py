@@ -5,9 +5,21 @@ assertions are written as properties rather than frozen counts, because what is
 running changes — except where a count is the finding.
 """
 
+import random
+
 import pytest
 
-from powerguard.domain import DOWNLOAD, OTHER, TRAINING, Machine, plan, unowned_at_risk
+from powerguard.domain import (
+    DOWNLOAD,
+    HIBERNATE,
+    OTHER,
+    TRAINING,
+    Job,
+    Machine,
+    collateral,
+    plan,
+    unowned_at_risk,
+)
 from powerguard.machine import Process, gpu, jobs, power, processes
 
 HERE = processes()
@@ -103,3 +115,106 @@ def test_it_still_sleeps_what_it_does_own():
     # Displays are not a process. Losing mains always sleeps them.
     actions = plan(Machine(on_mains=False, battery_pct=90, minutes_remaining=60), jobs())
     assert any(a.target == "displays" for a in actions)
+
+
+# --- The guarantee, proven over the space rather than observed once ----------
+#
+# Everything above reads this machine as it happens to be right now. That is the
+# right way to catch what a fixture would hide — the `\buv\b` bug and the
+# missing pid both came from it — but "3 of 3 jobs were another session's" is a
+# snapshot, and a snapshot is not a guarantee. These generate the process table
+# instead, and assert the invariant across every power state and job mix.
+
+
+def _states(seed=0, cases=4000):
+    """Machine states and job lists, generated rather than observed."""
+    rng = random.Random(seed)
+    kinds = (TRAINING, DOWNLOAD, OTHER)
+    for _ in range(cases):
+        machine = Machine(
+            on_mains=rng.random() < 0.5,
+            battery_pct=rng.randint(0, 100),
+            minutes_remaining=rng.randint(0, 600),
+        )
+        jobs_ = [
+            Job(
+                pid=pid,
+                name=rng.choice(["python.exe", "ollama.exe", "uv.exe", "node.exe"]),
+                kind=rng.choice(kinds),
+                owned=rng.random() < 0.5,
+                resumable=rng.random() < 0.5,
+                checkpointable=rng.random() < 0.5,
+            )
+            for pid in rng.sample(range(1, 10_000), rng.randint(0, 8))
+        ]
+        yield machine, jobs_
+
+
+def test_no_plan_in_four_thousand_states_signals_an_unowned_process():
+    # THE GUARANTEE. Not "on this machine today" — over 4,000 generated states
+    # covering both power states, the full battery range and every mix of owned
+    # and unowned work, no action is ever aimed at a pid we do not own.
+    checked = 0
+    for machine, jobs_ in _states():
+        theirs = {j.pid for j in jobs_ if not j.owned}
+        for action in plan(machine, jobs_):
+            if action.pid is not None:
+                assert action.pid not in theirs
+                checked += 1
+    assert checked > 1_000  # the invariant was actually exercised, not vacuous
+
+
+def test_every_action_with_a_pid_names_a_job_that_exists():
+    for machine, jobs_ in _states(seed=1):
+        live = {j.pid for j in jobs_}
+        for action in plan(machine, jobs_):
+            if action.pid is not None:
+                assert action.pid in live
+
+
+def test_hibernate_is_the_one_action_that_reaches_another_session():
+    # THE GAP the generated states exposed, which the live test could not.
+    #
+    # `plan` refuses to signal a process it does not own — and then hibernates
+    # the whole machine, which suspends every process on it. Hibernation is not
+    # a kill (Windows restores memory from disk), but a CUDA context does not
+    # reliably survive it and an open socket does not survive it at all.
+    #
+    # The fix is not to refuse: losing mains on a flat battery ends that work
+    # anyway, and unhibernated it ends worse. It is to say so.
+    theirs = [
+        Job(pid=99, name="ollama.exe", kind=TRAINING, owned=False, checkpointable=False)
+    ]
+    flat = Machine(on_mains=False, battery_pct=5, minutes_remaining=3)
+    (hibernate,) = [a for a in plan(flat, theirs) if a.verb == HIBERNATE]
+
+    assert hibernate.pid is None  # it is not aimed at a process
+    assert "another session" in hibernate.reason
+    assert "ollama.exe(99)" in hibernate.reason
+
+    # And it stays quiet when there is nothing of theirs to warn about.
+    ours = [Job(pid=7, name="python.exe", kind=TRAINING, owned=True, checkpointable=True)]
+    (mine,) = [a for a in plan(flat, ours) if a.verb == HIBERNATE]
+    assert "another session" not in mine.reason
+
+
+def test_collateral_is_reported_whenever_hibernate_is_planned():
+    for machine, jobs_ in _states(seed=2):
+        actions = plan(machine, jobs_)
+        hibernates = [a for a in actions if a.verb == HIBERNATE]
+        if not hibernates:
+            continue
+        expected = collateral(jobs_)
+        reason = hibernates[0].reason
+        assert ("another session" in reason) == bool(expected)
+        for job in expected:
+            assert f"{job.name}({job.pid})" in reason
+
+
+def test_mains_restored_never_touches_their_work_either():
+    for machine, jobs_ in _states(seed=3):
+        if not machine.on_mains:
+            continue
+        theirs = {j.pid for j in jobs_ if not j.owned}
+        for action in plan(machine, jobs_):
+            assert action.pid not in theirs

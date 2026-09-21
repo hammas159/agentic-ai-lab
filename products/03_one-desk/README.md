@@ -25,7 +25,30 @@ cached in `data/adapter_runs.json` by `scripts/run_adapter.py`.
 | Adapter variant vs **its source** | **0.528** |
 | Adapter variant vs **another variant** | **0.290** |
 | Two people, same meeting | **0.229** |
-| Two people, different meetings | 0.159 |
+| Two people, different meetings | 0.156 |
+
+### The human baseline is seven points wide, and it had to be tested
+
+The bottom two rows are the yardstick, and the gap between them is the whole signal: two
+people describing **one** meeting overlap at 0.229; two people describing **different**
+meetings overlap at 0.156, purely from the vocabulary of describing a meeting at all.
+
+**0.073 is small enough that reporting it untested would be a guess.** It survives:
+
+| | |
+|---|---:|
+| Separation | **0.073** |
+| Permutation test, 10,000 label shuffles | **0 reach it** (p < 0.0001) |
+| 95% bootstrap interval | **[0.060, 0.085]** |
+
+Small *and* real is exactly the useful outcome. If the gap were large, two people describing
+one meeting would substantially agree, and nothing a rewriter produced would look
+impressive by comparison. It is 0.073 — which is what makes the numbers above mean
+something.
+
+The control also used to stop at the first 40 meetings, for no reason the code gave. All 80
+cost 3,160 comparisons, which is nothing; it moved the control median from 0.159 to 0.156.
+A `limit=400` parameter on `baseline()` was dead — never read in the body — and is gone.
 
 ### The adaptation is real, and this README predicted the opposite
 
@@ -73,7 +96,7 @@ Reproduce it:
 
 ```bash
 python scripts/run_adapter.py 12     # ~4 min on this card, writes the cache
-cd 03_one-desk && python -m pytest -q     # 34 passed
+cd 03_one-desk && python -m pytest -q     # 35 passed
 ```
 
 ## Agents and write authority
@@ -129,7 +152,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 03_one-desk
-python -m pytest -q                      # 17 passed
+python -m pytest -q                      # 35 passed
 PYTHONPATH="src;../platform/src" python -m onedesk.app    # console on http://127.0.0.1:8000
 ```
 
