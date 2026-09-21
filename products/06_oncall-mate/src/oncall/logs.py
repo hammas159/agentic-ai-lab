@@ -35,7 +35,14 @@ _MASKS: tuple[tuple[re.Pattern, str], ...] = (
     (re.compile(r"\b\d+(?:\.\d+)?\b"), "<num>"),
 )
 
-SYSTEMS = ("hdfs", "bgl", "hpc", "openstack", "zookeeper")
+# All sixteen Loghub systems, not the five that happened to be downloaded
+# first. The product's finding is the SPREAD of the compression ratio, and a
+# spread taken from five points says very little about its ends.
+SYSTEMS = (
+    "android", "apache", "bgl", "hadoop", "hdfs", "healthapp", "hpc", "linux",
+    "mac", "openssh", "openstack", "proxifier", "spark", "thunderbird",
+    "windows", "zookeeper",
+)
 
 
 class LogsMissingError(FileNotFoundError):

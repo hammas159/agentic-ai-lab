@@ -85,3 +85,14 @@ fetch_clcuv() {
   done
   echo "clcuv_full.gb: $(grep -c '^LOCUS' ../data/clcuv_full.gb) records"
 }
+
+# --- Loghub: all sixteen published 2k samples ------------------------------
+# The first pass took five, which is a thin basis for a claim about a spread.
+# raw.githubusercontent serves these fine even when codeload is throttled here.
+fetch_loghub() {
+  local s low
+  for s in Android Apache BGL Hadoop HDFS HealthApp HPC Linux Mac OpenSSH            OpenStack Proxifier Spark Thunderbird Windows Zookeeper; do
+    low=$(echo "$s" | tr 'A-Z' 'a-z')
+    curl -sf "https://raw.githubusercontent.com/logpai/loghub/master/$s/${s}_2k.log"       -o "../data/${low}_2k.log" && echo "  ${low}_2k.log"
+  done
+}

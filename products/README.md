@@ -27,7 +27,7 @@ python scripts/screenshots.py   # real captures of the running console
 Every Input/Output section in the twenty READMEs is written from `scripts/runs.json`,
 which is a real intake → drain → approve cycle. None of those figures were typed by hand.
 
-**740 tests, all passing, zero skipped.** Every product reads a real dataset; the
+**742 tests, all passing, zero skipped.** Every product reads a real dataset; the
 contract tests ran against real Kafka, real Redis and real Postgres. The datasets are
 committed under [`data/`](data) — OFAC's sanctions lists, Loghub, Synthea, AMI, LoCoMo,
 OSV, HotpotQA, eCFR, TSPLIB, NCBI GenBank, UCI Online Retail II and seventeen RFCs.
@@ -54,7 +54,7 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 | [03](03_one-desk) | **one-desk** | 300 AMI summaries + 48 real 14B generations | The human baseline is **0.073 wide** (p<0.0001); four variants differ as much as two people do |
 | [04](04_ledger-brain) | **ledger-brain** | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
 | [05](05_comms-desk) | **comms-desk** | 104,923 AMI dialogue acts, all 139 meetings | Ignoring who spoke makes 786 merges, **686 of them wrong** |
-| [06](06_oncall-mate) | **oncall-mate** | 10,000 Loghub lines, 5 systems | Compression ratio spans **115x** with the templater fixed |
+| [06](06_oncall-mate) | **oncall-mate** | 32,000 Loghub lines, all 16 systems | Compression ratio spans **115x** with the templater fixed; median is **8.5x**, not 11 |
 | [07](07_hire-desk) | **hire-desk** | 5,882 real conversation turns | After redacting 1,971 names, **"Mel" survives 59 times** |
 | [08](08_bid-desk) | **bid-desk** | 4,036 RFC 2119 requirements, 17 RFCs | Recall is **1.000**; precision **0.827** — the asymmetry runs the other way |
 | [09](09_hermes-home) | **hermes-home** | LoCoMo, 1,982 questions | Median answer lives **14 sessions back**; an 8-session window answers **28%** |
@@ -128,11 +128,11 @@ is not.
   headline an order of magnitude too high — and left it drifting 18% when a dataset was
   committed.
 
-### The one lesson that recurred across six products
+### The one lesson that recurred across seven products
 
 Every product here was first measured on a subset, because a subset was what finished
-quickly or was already downloaded. Five of the six subsets were lying, and only some of them
-in a predictable direction:
+quickly or was already downloaded. Five of the seven subsets were lying, and only some of
+them in a predictable direction:
 
 | Product | Sampled | Whole corpus | Moved |
 |---|---:|---:|---|
@@ -141,6 +141,7 @@ in a predictable direction:
 | **claims-floor** | 0.28 yr median error (1 title) | **2.47 yr** (6) | understated 9x |
 | **agri-desk** | 10 → 0, rate 1.000 (60 genomes) | **422 → 2**, 0.9954 (898) | unfalsifiable |
 | **fleet-desk** | sweep +92% (1 TSPLIB instance) | **+54% to +181%** (6) | hid a trend |
+| **oncall-mate** | 115x spread (5 systems) | **115x** (16) | ends held, median fell |
 | **graph-clinic** | 0.734 bridge (3,000 questions) | **0.753** (7,405) | honest |
 
 Only one of the five sampled honestly, and the failures were three different kinds:
@@ -167,6 +168,13 @@ of six. Its *rate* generalised fine — 52.2% against a pooled 49.1% — but its
 staleness, 0.28 years, was a tenth of every other regulator's, and the README had already
 explained that away as "most amendments are recent". One regulator is one drafting culture;
 the number was about OSHA, not about versioned documents.
+
+**Sometimes the subset was fine, and you only know afterwards.** oncall-mate's spread ran
+from 1.09x to 125x on five log systems. On all sixteen it runs from 1.09x to 125x — both
+ends held, and not one of the eleven newcomers reached either. What *did* move was the
+middle: the median ratio fell from 11.1 to 8.5, because three of the original five happened
+to be unusually compressible. A confirmation is a result too, and it is only available after
+you check.
 
 **One point cannot show a slope.** fleet-desk measured a single 52-stop routing instance and
 reported the circular route as 92% worse than optimal. Across six instances the excess rises

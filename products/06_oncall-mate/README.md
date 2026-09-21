@@ -10,17 +10,28 @@ serves the shared operator console at `/`.
 
 ## The finding
 
-**Measured on 10,000 real production log lines** — Loghub's published samples from five
-systems, 2,000 lines each, one templater, no tuning per system.
+**Measured on 32,000 real production log lines** — all sixteen of Loghub's published
+samples, 2,000 lines each, one templater, no tuning per system.
 
 | System | Distinct messages | Templates | Ratio | Messages seen once that stop existing |
 |---|---:|---:|---:|---:|
-| HDFS | 2,000 | 16 | **125.0x** | 1,997 of 2,000 |
-| OpenStack | 2,000 | 50 | 40.0x | 1,995 |
-| HPC | 1,999 | 180 | 11.1x | 1,886 |
-| ZooKeeper | 1,999 | 244 | 8.2x | 1,781 |
+| HDFS | 2,000 | 16 | **125.00x** | 1,997 |
+| Apache | 1,461 | 12 | 121.75x | 1,157 |
+| OpenStack | 2,000 | 50 | 40.00x | 1,995 |
+| HealthApp | 2,000 | 75 | 26.67x | 1,969 |
+| Linux | 2,000 | 178 | 11.24x | 1,903 |
+| HPC | 1,999 | 180 | 11.11x | 1,886 |
+| OpenSSH | 2,000 | 200 | 10.00x | 1,882 |
+| Android | 1,988 | 227 | 8.76x | 1,874 |
+| ZooKeeper | 1,999 | 244 | 8.19x | 1,781 |
+| Hadoop | 1,985 | 277 | 7.17x | 1,740 |
+| Spark | 1,862 | 390 | 4.77x | 1,483 |
+| Proxifier | 1,704 | 572 | 2.98x | 1,184 |
+| Mac | 1,991 | 706 | 2.82x | 1,543 |
+| Thunderbird | 1,963 | 816 | 2.41x | 1,281 |
+| Windows | 1,281 | 952 | 1.35x | 598 |
 | BGL | 2,000 | 1,840 | **1.09x** | 185 |
-| **All five** | 9,998 | 2,330 | 4.29x | 7,844 |
+| **All sixteen** | 30,233 | 6,735 | 4.49x | 24,458 |
 
 **The compression ratio spans 115x across systems with the templater held constant.** It is
 a property of the log, not of the templater — so a threshold tuned on one system says
@@ -31,16 +42,32 @@ problem is exactly where it started).
 **The last column is the one that matters.** An incident is made of the line that appeared
 once. On HDFS, 2,000 messages are seen exactly once and only 3 templates are — 1,997
 singletons stop existing as anything a correlator could point at. `log-detective` found
-this on one corpus; across five it is worse and it is not uniform.
+this on one corpus; across sixteen it is worse and it is not uniform.
 
-Note what the bottom row does: averaged over all five systems the ratio is 4.29x, which
-looks unremarkable. **The per-system table is the result; the headline number is the thing
-that hides it.**
+Note what the bottom row does: pooled over all sixteen the ratio is 4.49x, which looks
+unremarkable and sits *below the median of the systems it is made of*. **The per-system
+table is the result; the headline number is the thing that hides it.**
+
+### What tripling the systems changed, and what it did not
+
+This was first measured on five systems. Extending to all sixteen is the check a
+spread-shaped claim needs, and it came back split.
+
+**The ends did not move at all.** BlueGene/L is still the floor and HDFS still the ceiling;
+not one of the eleven newcomers reaches either, and the spread is still 115x. That is worth
+recording because it is not the usual outcome — [fleet-desk](../17_fleet-desk)'s
+single-instance spread understated itself badly.
+
+**The middle was wrong.** Three of the original five compressed above 10x; only seven of
+sixteen do. **The median ratio falls from 11.1 to 8.5**, so "expect roughly an order of
+magnitude" was optimistic. Most production logs are considerably less repetitive than HDFS,
+and Apache turning out to be the *second* most compressible system — 1,461 distinct lines
+into 12 templates — is the kind of thing five samples cannot tell you.
 
 Reproduce it:
 
 ```bash
-cd 06_oncall-mate && python -m pytest tests/test_real_logs.py -q     # 11 passed
+cd 06_oncall-mate && python -m pytest tests/test_real_logs.py -q     # 13 passed
 ```
 
 ## Agents and write authority
@@ -96,7 +123,7 @@ PYTHONPATH=src python -m pytest -q
 
 ```bash
 cd 06_oncall-mate
-python -m pytest -q                      # 18 passed
+python -m pytest -q                      # 31 passed
 PYTHONPATH="src;../platform/src" python -m oncall.app    # console on http://127.0.0.1:8000
 ```
 
