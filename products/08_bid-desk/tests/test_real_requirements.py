@@ -6,6 +6,18 @@ obligation and `must` in the same paragraph is prose. That is a labelled corpus
 of mandatory, advisory and optional items with no annotation required.
 
 Every figure asserted here was produced by running this code over those files.
+
+The corpus grows: RFCs get added to `products/data/` as they become relevant,
+and it has gone 6 -> 17 -> 24 documents. So the absolute counts below are
+bands or relationships, never frozen totals. An earlier version pinned
+`len(strict()) == 4_036` and five assertions like it, and every one of them
+broke the moment a new RFC landed - which is the corpus improving, not the
+extractor regressing.
+
+What does NOT move is the precision of reading for the word instead of the
+keyword: 0.830 over six documents, 0.827 over seventeen, 0.825 over
+twenty-four. Quadrupling the corpus moved it by five thousandths. That is the
+finding, and it is the thing worth pinning tightly.
 """
 
 import pytest
@@ -26,20 +38,33 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_the_documents_load():
-    assert len(strict()) == 4_036
-    assert len(loose()) == 5_750
+    documents = len(list(DATA.glob("rfc*.txt")))
+    assert documents >= 6, "too few RFCs on disk to measure anything"
+    # A published RFC carries requirements in the hundreds; far below that and
+    # the parser is dropping them, far above and it is matching prose.
+    assert 100 * documents < len(strict()) < 400 * documents
+    # The case-insensitive reader is a strict superset, always.
+    assert len(loose()) > len(strict())
 
 
 def test_the_keyword_mix_is_what_rfc_2119_describes():
     counts = by_keyword(strict())
-    assert counts["MUST"] == 1_558
+    # MUST dominates: it is the word the standard tells authors to reach for.
+    assert counts["MUST"] == max(counts.values())
+    assert counts["MUST"] > len(strict()) * 0.3
     assert counts["SHALL"] < counts["MUST"] / 10  # rare now, and still binding
     assert set(counts) >= set(MANDATORY)
 
 
 def test_mandatory_is_a_minority_of_all_requirements():
-    assert len(mandatory_only(strict())) == 2_242
-    assert len(mandatory_only(strict())) < len(strict())
+    requirements = strict()
+    mandatory = mandatory_only(requirements)
+    assert mandatory
+    assert len(mandatory) < len(requirements)
+    # Consistently a little over half: binding language outnumbers advisory,
+    # but not overwhelmingly, and a swing outside this band would mean the
+    # mandatory/advisory split had changed meaning.
+    assert 0.45 < len(mandatory) / len(requirements) < 0.65
 
 
 def test_a_case_insensitive_reader_cannot_miss_a_mandatory_item():
@@ -58,7 +83,11 @@ def test_but_one_flagged_obligation_in_five_is_not_one():
     # reason to trust it.
     result = compare_mandatory()
     assert result.precision == pytest.approx(0.827, abs=0.015)
-    assert result.false_positives == 465
+    # About one flagged obligation in five is not one. Asserted as a share
+    # rather than a count, because the count tracks the corpus and the share
+    # does not: 465 false positives over seventeen documents and 501 over
+    # twenty-four, both close to a fifth of everything flagged.
+    assert 0.15 < result.false_positives / result.found < 0.25
 
 
 def test_the_distinction_is_the_capital_letters():
@@ -72,7 +101,9 @@ def test_the_distinction_is_the_capital_letters():
 
 def test_prohibitions_count_as_mandatory():
     counts = by_keyword(strict())
-    assert counts["MUST NOT"] == 582
+    assert counts["MUST NOT"] > 0
+    # A prohibition is roughly a third as common as the obligation it mirrors.
+    assert 0.2 < counts["MUST NOT"] / counts["MUST"] < 0.6
     assert all(r.mandatory for r in strict() if r.keyword == "MUST NOT")
 
 

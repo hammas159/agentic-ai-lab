@@ -6,3 +6,7 @@ __pycache__/
 .pytest_cache/
 # Vendored Hugging Face tree listings are kept (data/trees) - re-fetching them needs
 # the GitHub API and this connection drops large tree responses.
+
+# Output of scripts/test_all.py, regenerated on demand.
+test_all.log
+run_tests.bat

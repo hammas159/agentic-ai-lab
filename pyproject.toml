@@ -55,3 +55,14 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# `projects/*` and `products/*` are independent packages, each with its own
+# pyproject and its own `pythonpath = ["src"]`. Running pytest from here tried
+# to collect them, could not import their src packages, and stopped with 94
+# collection errors - a repository that looks broken because of a layout doing
+# exactly what it was designed to do. `testpaths` alone does not prevent this
+# when pytest is given an explicit path or run with --collect-only from the
+# root, so the directories are excluded outright.
+#
+# Run them with `python scripts/test_all.py`, which executes each suite in its
+# own process from its own directory.
+norecursedirs = ["projects", "products", "apps", ".venv", "data", "*.egg-info"]
