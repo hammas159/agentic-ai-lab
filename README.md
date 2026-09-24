@@ -22,18 +22,18 @@ Redis state and a worker that owns the single GPU.
 
 ## The ten
 
-| | App | Question | Theme |
-|---|---|---|---|
-| 🧭 | [**Localizer**](apps/01_localizer) | which file does this issue touch? | deep ocean |
-| 🧫 | [**False Accepts**](apps/02_false_accepts) | how much wrong code do three asserts let through? | crimson lab |
-| 🛡 | [**Vuln Baseline**](apps/03_vuln_baseline) | can a model beat answering "safe" every time? | amber terminal |
-| 📐 | [**Size Curve**](apps/04_size_curve) | where does a 5× bigger model actually pay? | violet |
-| 🌿 | [**Debug Ceiling**](apps/05_debug_ceiling) | how many rounds of self-debugging are worth it? | forest, light |
-| 🎯 | [**Kill Rate**](apps/06_kill_rate) | do model-written tests catch anything? | magenta |
-| 🔀 | [**Repair or Rewrite**](apps/07_repair_rewrite) | patch the failure, or start over? | slate & coral, light |
-| 🖋 | [**Prompt Shapes**](apps/08_prompt_shapes) | how much of a score is the wording? | teal paper, light |
-| 🌡 | [**Temperature Lab**](apps/09_temperature) | where do pass@1 and pass@k diverge? | heat |
-| 📜 | [**Roundtrip**](apps/10_roundtrip) | what survives code → prose → code? | sepia, light |
+| # | Icon | App | Question | Theme |
+|---|:-:|---|---|---|
+| [**01**](apps/01_localizer) | 🧭 | [**Localizer**](apps/01_localizer) | which file does this issue touch? | deep ocean |
+| [**02**](apps/02_false_accepts) | 🧫 | [**False Accepts**](apps/02_false_accepts) | how much wrong code do three asserts let through? | crimson lab |
+| [**03**](apps/03_vuln_baseline) | 🛡 | [**Vuln Baseline**](apps/03_vuln_baseline) | can a model beat answering "safe" every time? | amber terminal |
+| [**04**](apps/04_size_curve) | 📐 | [**Size Curve**](apps/04_size_curve) | where does a 5× bigger model actually pay? | violet |
+| [**05**](apps/05_debug_ceiling) | 🌿 | [**Debug Ceiling**](apps/05_debug_ceiling) | how many rounds of self-debugging are worth it? | forest, light |
+| [**06**](apps/06_kill_rate) | 🎯 | [**Kill Rate**](apps/06_kill_rate) | do model-written tests catch anything? | magenta |
+| [**07**](apps/07_repair_rewrite) | 🔀 | [**Repair or Rewrite**](apps/07_repair_rewrite) | patch the failure, or start over? | slate & coral, light |
+| [**08**](apps/08_prompt_shapes) | 🖋 | [**Prompt Shapes**](apps/08_prompt_shapes) | how much of a score is the wording? | teal paper, light |
+| [**09**](apps/09_temperature) | 🌡 | [**Temperature Lab**](apps/09_temperature) | where do pass@1 and pass@k diverge? | heat |
+| [**10**](apps/10_roundtrip) | 📜 | [**Roundtrip**](apps/10_roundtrip) | what survives code → prose → code? | sepia, light |
 
 Ten palettes, four light and six dark, with their own typeface pairings and corner radii —
 opening two of them side by side should not feel like opening the same tool twice.
@@ -123,17 +123,17 @@ built around something that turned out to be wrong.
 
 | # | Tool | What it does |
 |---|---|---|
-| 01 | [**repo-cartographer**](projects/01_repo-cartographer) | Map an unfamiliar Python codebase from its AST — no embeddings, no model |
-| 02 | [**test-smith**](projects/02_test-smith) | Mutation testing from the standard library: does the suite catch the change, or merely run it? |
-| 03 | [**review-bot**](projects/03_review-bot) | Propose findings, then try to disprove each one. Report only what survives |
-| 04 | [**migration-pilot**](projects/04_migration-pilot) | Modernise Python where the rewrite is provably equivalent, and refuse where it would change behaviour |
-| 05 | [**release-captain**](projects/05_release-captain) | Release readiness scored from diff statistics, not from opinion |
-| 06 | [**db-surgeon**](projects/06_db-surgeon) | Prove a migration's rollback on a throwaway copy before trusting it |
-| 07 | [**compliance-auditor**](projects/07_compliance-auditor) | Stated policy checked against collected evidence. No inferred compliance |
-| 08 | [**csv-analyst**](projects/08_csv-analyst) | Profile a CSV, compute only what validates, and never narrate a number that was not computed |
-| 09 | [**log-detective**](projects/09_log-detective) | Extract log templates, and report what the extraction destroyed |
-| 10 | [**contract-reader**](projects/10_contract-reader) | Read a licence, and cite the character span behind every claim |
-| 11 | [**study-tutor**](projects/11_study-tutor) | Spaced repetition where the scheduler is arithmetic and the model only writes questions |
+| [**01**](projects/01_repo-cartographer) | [**repo-cartographer**](projects/01_repo-cartographer) | Map an unfamiliar Python codebase from its AST — no embeddings, no model |
+| [**02**](projects/02_test-smith) | [**test-smith**](projects/02_test-smith) | Mutation testing from the standard library: does the suite catch the change, or merely run it? |
+| [**03**](projects/03_review-bot) | [**review-bot**](projects/03_review-bot) | Propose findings, then try to disprove each one. Report only what survives |
+| [**04**](projects/04_migration-pilot) | [**migration-pilot**](projects/04_migration-pilot) | Modernise Python where the rewrite is provably equivalent, and refuse where it would change behaviour |
+| [**05**](projects/05_release-captain) | [**release-captain**](projects/05_release-captain) | Release readiness scored from diff statistics, not from opinion |
+| [**06**](projects/06_db-surgeon) | [**db-surgeon**](projects/06_db-surgeon) | Prove a migration's rollback on a throwaway copy before trusting it |
+| [**07**](projects/07_compliance-auditor) | [**compliance-auditor**](projects/07_compliance-auditor) | Stated policy checked against collected evidence. No inferred compliance |
+| [**08**](projects/08_csv-analyst) | [**csv-analyst**](projects/08_csv-analyst) | Profile a CSV, compute only what validates, and never narrate a number that was not computed |
+| [**09**](projects/09_log-detective) | [**log-detective**](projects/09_log-detective) | Extract log templates, and report what the extraction destroyed |
+| [**10**](projects/10_contract-reader) | [**contract-reader**](projects/10_contract-reader) | Read a licence, and cite the character span behind every claim |
+| [**11**](projects/11_study-tutor) | [**study-tutor**](projects/11_study-tutor) | Spaced repetition where the scheduler is arithmetic and the model only writes questions |
 
 ## The twenty business agents
 
@@ -141,13 +141,18 @@ In [`products/`](products), on a ports-and-adapters platform with its own five-t
 convention. Each one is measured against real data — the full table with every finding is in
 [`products/README.md`](products/README.md).
 
-| | | | |
+| # | Agent | # | Agent |
 |---|---|---|---|
-| [**revenue-desk**](products/01_revenue-desk) | [**ward-sync**](products/02_ward-sync) | [**one-desk**](products/03_one-desk) | [**ledger-brain**](products/04_ledger-brain) |
-| [**comms-desk**](products/05_comms-desk) | [**oncall-mate**](products/06_oncall-mate) | [**hire-desk**](products/07_hire-desk) | [**bid-desk**](products/08_bid-desk) |
-| [**hermes-home**](products/09_hermes-home) | [**kyc-floor**](products/10_kyc-floor) | [**watchtower**](products/11_watchtower) | [**powerguard**](products/12_powerguard) |
-| [**swarm-lab**](products/13_swarm-lab) | [**graph-clinic**](products/14_graph-clinic) | [**claims-floor**](products/15_claims-floor) | [**shelf-ops**](products/16_shelf-ops) |
-| [**fleet-desk**](products/17_fleet-desk) | [**campus-ops**](products/18_campus-ops) | [**agri-desk**](products/19_agri-desk) | [**driftwatch**](products/20_driftwatch) |
+| [**01**](products/01_revenue-desk) | [**revenue-desk**](products/01_revenue-desk) | [**11**](products/11_watchtower) | [**watchtower**](products/11_watchtower) |
+| [**02**](products/02_ward-sync) | [**ward-sync**](products/02_ward-sync) | [**12**](products/12_powerguard) | [**powerguard**](products/12_powerguard) |
+| [**03**](products/03_one-desk) | [**one-desk**](products/03_one-desk) | [**13**](products/13_swarm-lab) | [**swarm-lab**](products/13_swarm-lab) |
+| [**04**](products/04_ledger-brain) | [**ledger-brain**](products/04_ledger-brain) | [**14**](products/14_graph-clinic) | [**graph-clinic**](products/14_graph-clinic) |
+| [**05**](products/05_comms-desk) | [**comms-desk**](products/05_comms-desk) | [**15**](products/15_claims-floor) | [**claims-floor**](products/15_claims-floor) |
+| [**06**](products/06_oncall-mate) | [**oncall-mate**](products/06_oncall-mate) | [**16**](products/16_shelf-ops) | [**shelf-ops**](products/16_shelf-ops) |
+| [**07**](products/07_hire-desk) | [**hire-desk**](products/07_hire-desk) | [**17**](products/17_fleet-desk) | [**fleet-desk**](products/17_fleet-desk) |
+| [**08**](products/08_bid-desk) | [**bid-desk**](products/08_bid-desk) | [**18**](products/18_campus-ops) | [**campus-ops**](products/18_campus-ops) |
+| [**09**](products/09_hermes-home) | [**hermes-home**](products/09_hermes-home) | [**19**](products/19_agri-desk) | [**agri-desk**](products/19_agri-desk) |
+| [**10**](products/10_kyc-floor) | [**kyc-floor**](products/10_kyc-floor) | [**20**](products/20_driftwatch) | [**driftwatch**](products/20_driftwatch) |
 
 **The `products/` platform and the `apps/` platform are separate and currently duplicate
 each other** — worth merging or explicitly splitting before either is presented as the house
