@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # The root suite covers apps/_platform, which is the only code shared across
+  # the monorepo. It needs the platform dependencies; the sub-packages do not.
+  platform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+      - run: uv sync --all-groups
+      - run: uv run ruff check apps tests
+      - run: uv run ruff format --check apps tests
+      - run: uv run pytest -q
+
+  # Every projects/* and products/* package is independent: its own pyproject,
+  # its own pythonpath, its own suite. Running pytest at the root collects them,
+  # cannot import them, and dies - so they are run one process each, from their
+  # own directory, exactly as they would be if cloned alone.
+  packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - name: Every sub-package
+        run: python scripts/test_all.py
