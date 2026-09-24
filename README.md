@@ -24,16 +24,16 @@ Redis state and a worker that owns the single GPU.
 
 | | App | Question | Theme |
 |---|---|---|---|
-| 🧭 | **Localizer** | which file does this issue touch? | deep ocean |
-| 🧫 | **False Accepts** | how much wrong code do three asserts let through? | crimson lab |
-| 🛡 | **Vuln Baseline** | can a model beat answering "safe" every time? | amber terminal |
-| 📐 | **Size Curve** | where does a 5× bigger model actually pay? | violet |
-| 🌿 | **Debug Ceiling** | how many rounds of self-debugging are worth it? | forest, light |
-| 🎯 | **Kill Rate** | do model-written tests catch anything? | magenta |
-| 🔀 | **Repair or Rewrite** | patch the failure, or start over? | slate & coral, light |
-| 🖋 | **Prompt Shapes** | how much of a score is the wording? | teal paper, light |
-| 🌡 | **Temperature Lab** | where do pass@1 and pass@k diverge? | heat |
-| 📜 | **Roundtrip** | what survives code → prose → code? | sepia, light |
+| 🧭 | [**Localizer**](apps/01_localizer) | which file does this issue touch? | deep ocean |
+| 🧫 | [**False Accepts**](apps/02_false_accepts) | how much wrong code do three asserts let through? | crimson lab |
+| 🛡 | [**Vuln Baseline**](apps/03_vuln_baseline) | can a model beat answering "safe" every time? | amber terminal |
+| 📐 | [**Size Curve**](apps/04_size_curve) | where does a 5× bigger model actually pay? | violet |
+| 🌿 | [**Debug Ceiling**](apps/05_debug_ceiling) | how many rounds of self-debugging are worth it? | forest, light |
+| 🎯 | [**Kill Rate**](apps/06_kill_rate) | do model-written tests catch anything? | magenta |
+| 🔀 | [**Repair or Rewrite**](apps/07_repair_rewrite) | patch the failure, or start over? | slate & coral, light |
+| 🖋 | [**Prompt Shapes**](apps/08_prompt_shapes) | how much of a score is the wording? | teal paper, light |
+| 🌡 | [**Temperature Lab**](apps/09_temperature) | where do pass@1 and pass@k diverge? | heat |
+| 📜 | [**Roundtrip**](apps/10_roundtrip) | what survives code → prose → code? | sepia, light |
 
 Ten palettes, four light and six dark, with their own typeface pairings and corner radii —
 opening two of them side by side should not feel like opening the same tool twice.
@@ -116,15 +116,42 @@ Needs Ollama with `qwen2.5-coder:14b`, plus `:3b` for Size Curve and `nomic-embe
 Localizer. MBPP, HumanEval, Devign and SWE-bench Lite load from the local Hugging Face
 cache; nothing downloads at runtime.
 
-## Also in this repo
+## The eleven agent-infrastructure tools
 
-- **`projects/`** — eleven agent-infrastructure tools, zero runtime dependencies and zero
-  LLM calls: AST-based repo mapping, mutation testing, rollback proving, span-cited contract
-  reading.
-- **`products/`** — twenty business agents (revenue desk, ward sync, KYC floor…) on a
-  ports-and-adapters platform with its own five-topic Kafka convention. **That platform and
-  the `apps/` platform here are separate and currently duplicate each other** — worth merging
-  or explicitly splitting before either is presented as the house architecture.
+In [`projects/`](projects). Zero runtime dependencies and zero LLM calls — each one is
+built around something that turned out to be wrong.
+
+| # | Tool | What it does |
+|---|---|---|
+| 01 | [**repo-cartographer**](projects/01_repo-cartographer) | Map an unfamiliar Python codebase from its AST — no embeddings, no model |
+| 02 | [**test-smith**](projects/02_test-smith) | Mutation testing from the standard library: does the suite catch the change, or merely run it? |
+| 03 | [**review-bot**](projects/03_review-bot) | Propose findings, then try to disprove each one. Report only what survives |
+| 04 | [**migration-pilot**](projects/04_migration-pilot) | Modernise Python where the rewrite is provably equivalent, and refuse where it would change behaviour |
+| 05 | [**release-captain**](projects/05_release-captain) | Release readiness scored from diff statistics, not from opinion |
+| 06 | [**db-surgeon**](projects/06_db-surgeon) | Prove a migration's rollback on a throwaway copy before trusting it |
+| 07 | [**compliance-auditor**](projects/07_compliance-auditor) | Stated policy checked against collected evidence. No inferred compliance |
+| 08 | [**csv-analyst**](projects/08_csv-analyst) | Profile a CSV, compute only what validates, and never narrate a number that was not computed |
+| 09 | [**log-detective**](projects/09_log-detective) | Extract log templates, and report what the extraction destroyed |
+| 10 | [**contract-reader**](projects/10_contract-reader) | Read a licence, and cite the character span behind every claim |
+| 11 | [**study-tutor**](projects/11_study-tutor) | Spaced repetition where the scheduler is arithmetic and the model only writes questions |
+
+## The twenty business agents
+
+In [`products/`](products), on a ports-and-adapters platform with its own five-topic Kafka
+convention. Each one is measured against real data — the full table with every finding is in
+[`products/README.md`](products/README.md).
+
+| | | | |
+|---|---|---|---|
+| [**revenue-desk**](products/01_revenue-desk) | [**ward-sync**](products/02_ward-sync) | [**one-desk**](products/03_one-desk) | [**ledger-brain**](products/04_ledger-brain) |
+| [**comms-desk**](products/05_comms-desk) | [**oncall-mate**](products/06_oncall-mate) | [**hire-desk**](products/07_hire-desk) | [**bid-desk**](products/08_bid-desk) |
+| [**hermes-home**](products/09_hermes-home) | [**kyc-floor**](products/10_kyc-floor) | [**watchtower**](products/11_watchtower) | [**powerguard**](products/12_powerguard) |
+| [**swarm-lab**](products/13_swarm-lab) | [**graph-clinic**](products/14_graph-clinic) | [**claims-floor**](products/15_claims-floor) | [**shelf-ops**](products/16_shelf-ops) |
+| [**fleet-desk**](products/17_fleet-desk) | [**campus-ops**](products/18_campus-ops) | [**agri-desk**](products/19_agri-desk) | [**driftwatch**](products/20_driftwatch) |
+
+**The `products/` platform and the `apps/` platform are separate and currently duplicate
+each other** — worth merging or explicitly splitting before either is presented as the house
+architecture.
 
 ## Limits
 

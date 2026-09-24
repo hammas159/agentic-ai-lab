@@ -49,26 +49,26 @@ figure below was typed by hand; each is asserted by a test that runs the code ov
 
 | # | Product | Real data | What it measured |
 |---|---|---|---|
-| [01](01_revenue-desk) | **revenue-desk** | 714,164 line edits, every git repo on disk | Generated files are **97% of reverts**; the honest rate is 12x lower and doesn't drift |
-| [02](02_ward-sync) | **ward-sync** | 3,850 Synthea prescriptions | **93% of prescriptions end**; a "current list" is **5.5x too long** for 104 of 105 patients |
-| [03](03_one-desk) | **one-desk** | 300 AMI summaries + 48 real 14B generations | The human baseline is **0.073 wide** (p<0.0001); four variants differ as much as two people do |
-| [04](04_ledger-brain) | **ledger-brain** | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
-| [05](05_comms-desk) | **comms-desk** | 104,923 AMI dialogue acts, all 139 meetings | Ignoring who spoke makes 786 merges, **686 of them wrong** |
-| [06](06_oncall-mate) | **oncall-mate** | 32,000 Loghub lines, all 16 systems | Compression ratio spans **115x** with the templater fixed; median is **8.5x**, not 11 |
-| [07](07_hire-desk) | **hire-desk** | 5,882 real conversation turns | After redacting 1,971 names, **"Mel" survives 59 times** |
-| [08](08_bid-desk) | **bid-desk** | 4,036 RFC 2119 requirements, 17 RFCs | Recall is **1.000**; precision **0.827** — the asymmetry runs the other way |
-| [09](09_hermes-home) | **hermes-home** | LoCoMo, 1,982 questions | Median answer lives **14 sessions back**; an 8-session window answers **28%** |
-| [10](10_kyc-floor) | **kyc-floor** | OFAC 8,650 + UN 2,163 labelled aliases | Skeletons buy **+19.8 points for zero precision cost** — and **+18.6 on a second list** |
-| [11](11_watchtower) | **watchtower** | 30,098 OSV PyPI advisories | "Below the highest fix" is wrong **15.4%** of the time — and **cannot fire at all** on 39% of them |
-| [12](12_powerguard) | **powerguard** | this machine + 4,000 generated states | **0** actions ever aimed at another session's pid — except hibernate, which reaches everything |
-| [13](13_swarm-lab) | **swarm-lab** | N workers on real Redis | Uncoordinated waste is exactly **1 - 1/N**; 95% at N=21 |
-| [14](14_graph-clinic) | **graph-clinic** | all 7,405 HotpotQA questions | Graph wins **4.5x** on bridge questions and finds **1 in 1,000** comparison ones |
-| [15](15_claims-floor) | **claims-floor** | 6,000 eCFR versions, 6 regulators | Returning the current text is wrong **49%** of the time, by a median of **2.5 years** |
-| [16](16_shelf-ops) | **shelf-ops** | 4,501 real products | Compounding two in-policy discounts breaks **one product in five** |
-| [17](17_fleet-desk) | **fleet-desk** | 6 TSPLIB instances + proven optima | "Go round the city in a circle" is **92% worse at 52 stops, 181% at 150** |
-| [18](18_campus-ops) | **campus-ops** | 5,571 scheduled events | A room-only checker misses the **9 overlaps that are physically impossible** |
-| [19](19_agri-desk) | **agri-desk** | all 898 NCBI GenBank genomes, 23 countries | **422 emerging variants become 2**; false-alarm rate **0.9954** — and the 2 are real |
-| [20](20_driftwatch) | **driftwatch** | 35 real repositories | **1.64%** of README sentences are machine-settleable; 9.1% of those are false |
+| [01](01_revenue-desk) | [**revenue-desk**](01_revenue-desk) | 714,164 line edits, every git repo on disk | Generated files are **97% of reverts**; the honest rate is 12x lower and doesn't drift |
+| [02](02_ward-sync) | [**ward-sync**](02_ward-sync) | 3,850 Synthea prescriptions | **93% of prescriptions end**; a "current list" is **5.5x too long** for 104 of 105 patients |
+| [03](03_one-desk) | [**one-desk**](03_one-desk) | 300 AMI summaries + 48 real 14B generations | The human baseline is **0.073 wide** (p<0.0001); four variants differ as much as two people do |
+| [04](04_ledger-brain) | [**ledger-brain**](04_ledger-brain) | 54,716 real invoices | **Half** share an amount with another; matcher accuracy on that half is **33.7%** |
+| [05](05_comms-desk) | [**comms-desk**](05_comms-desk) | 104,923 AMI dialogue acts, all 139 meetings | Ignoring who spoke makes 786 merges, **686 of them wrong** |
+| [06](06_oncall-mate) | [**oncall-mate**](06_oncall-mate) | 32,000 Loghub lines, all 16 systems | Compression ratio spans **115x** with the templater fixed; median is **8.5x**, not 11 |
+| [07](07_hire-desk) | [**hire-desk**](07_hire-desk) | 5,882 real conversation turns | After redacting 1,971 names, **"Mel" survives 59 times** |
+| [08](08_bid-desk) | [**bid-desk**](08_bid-desk) | 4,036 RFC 2119 requirements, 17 RFCs | Recall is **1.000**; precision **0.827** — the asymmetry runs the other way |
+| [09](09_hermes-home) | [**hermes-home**](09_hermes-home) | LoCoMo, 1,982 questions | Median answer lives **14 sessions back**; an 8-session window answers **28%** |
+| [10](10_kyc-floor) | [**kyc-floor**](10_kyc-floor) | OFAC 8,650 + UN 2,163 labelled aliases | Skeletons buy **+19.8 points for zero precision cost** — and **+18.6 on a second list** |
+| [11](11_watchtower) | [**watchtower**](11_watchtower) | 30,098 OSV PyPI advisories | "Below the highest fix" is wrong **15.4%** of the time — and **cannot fire at all** on 39% of them |
+| [12](12_powerguard) | [**powerguard**](12_powerguard) | this machine + 4,000 generated states | **0** actions ever aimed at another session's pid — except hibernate, which reaches everything |
+| [13](13_swarm-lab) | [**swarm-lab**](13_swarm-lab) | N workers on real Redis | Uncoordinated waste is exactly **1 - 1/N**; 95% at N=21 |
+| [14](14_graph-clinic) | [**graph-clinic**](14_graph-clinic) | all 7,405 HotpotQA questions | Graph wins **4.5x** on bridge questions and finds **1 in 1,000** comparison ones |
+| [15](15_claims-floor) | [**claims-floor**](15_claims-floor) | 6,000 eCFR versions, 6 regulators | Returning the current text is wrong **49%** of the time, by a median of **2.5 years** |
+| [16](16_shelf-ops) | [**shelf-ops**](16_shelf-ops) | 4,501 real products | Compounding two in-policy discounts breaks **one product in five** |
+| [17](17_fleet-desk) | [**fleet-desk**](17_fleet-desk) | 6 TSPLIB instances + proven optima | "Go round the city in a circle" is **92% worse at 52 stops, 181% at 150** |
+| [18](18_campus-ops) | [**campus-ops**](18_campus-ops) | 5,571 scheduled events | A room-only checker misses the **9 overlaps that are physically impossible** |
+| [19](19_agri-desk) | [**agri-desk**](19_agri-desk) | all 898 NCBI GenBank genomes, 23 countries | **422 emerging variants become 2**; false-alarm rate **0.9954** — and the 2 are real |
+| [20](20_driftwatch) | [**driftwatch**](20_driftwatch) | 35 real repositories | **1.64%** of README sentences are machine-settleable; 9.1% of those are false |
 
 ### Four of them contradicted their own README
 
